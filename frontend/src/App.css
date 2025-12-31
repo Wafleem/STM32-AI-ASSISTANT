@@ -11,7 +11,7 @@ body {
 }
 
 .app {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   height: 100vh;
   display: flex;
@@ -135,4 +135,169 @@ header p {
 .input-container button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Session Info */
+.session-info {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.session-badge {
+  background: #0066cc;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.clear-session-btn {
+  background: #444;
+  color: #eee;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.clear-session-btn:hover {
+  background: #555;
+}
+
+/* Main Content Layout */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Pin Allocations Sidebar */
+.pin-allocations-sidebar {
+  width: 360px;
+  background: #16162a;
+  border-right: 1px solid #333;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.pin-allocations-sidebar h3 {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: #0066cc;
+  text-align: center;
+  font-weight: 600;
+}
+
+.allocations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.allocation-item {
+  background: #2a2a4a;
+  padding: 12px 14px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-left: 3px solid #0066cc;
+}
+
+.pin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.pin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.pin-name {
+  font-weight: bold;
+  color: #0066cc;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+}
+
+.pin-function {
+  background: #1a1a2e;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #88ddff;
+  font-family: 'Courier New', monospace;
+}
+
+.remove-pin-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-pin-btn:hover {
+  background: #ff0000;
+}
+
+.pin-device {
+  font-size: 0.85rem;
+  color: #ccc;
+  padding: 4px 0;
+}
+
+.device-label {
+  color: #888;
+  font-weight: 600;
+}
+
+.pin-notes {
+  background: #1a1a2e;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #ffaa66;
+  line-height: 1.4;
+  border-left: 2px solid #ffaa66;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .pin-allocations-sidebar {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #333;
+  }
+
+  .app {
+    max-width: 100%;
+  }
 }

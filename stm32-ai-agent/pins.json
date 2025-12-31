@@ -1,0 +1,806 @@
+{
+  "metadata": {
+    "chip": "STM32F103C8T6",
+    "family": "STM32F103x8/STM32F103xB",
+    "package": "LQFP48",
+    "datasheet": "DS5319 Rev 20",
+    "description": "Medium-density performance line ARM Cortex-M3 MCU with 64KB Flash, 20KB SRAM",
+    "totalPins": 48,
+    "gpioPins": 37,
+    "extracted": "2024-12-29"
+  },
+  "pins": [
+    {
+      "pin": "VBAT",
+      "lqfp48": 1,
+      "type": "S",
+      "description": "Battery backup supply for RTC and backup registers"
+    },
+    {
+      "pin": "PC13",
+      "port": "C",
+      "number": 13,
+      "lqfp48": 2,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PC13",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "TAMPER-RTC", "peripheral": "RTC", "remap": false}
+      ],
+      "notes": "Limited drive: max 3mA sink, max 2MHz speed, max 30pF load. Powered by backup domain power switch."
+    },
+    {
+      "pin": "PC14",
+      "port": "C",
+      "number": 14,
+      "lqfp48": 3,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PC14",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "OSC32_IN", "peripheral": "RTC", "remap": false}
+      ],
+      "notes": "Limited drive: max 3mA sink, max 2MHz speed. Connect to 32.768kHz crystal for RTC, or use as GPIO."
+    },
+    {
+      "pin": "PC15",
+      "port": "C",
+      "number": 15,
+      "lqfp48": 4,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PC15",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "OSC32_OUT", "peripheral": "RTC", "remap": false}
+      ],
+      "notes": "Limited drive: max 3mA sink, max 2MHz speed. Connect to 32.768kHz crystal for RTC, or use as GPIO."
+    },
+    {
+      "pin": "OSC_IN",
+      "lqfp48": 5,
+      "type": "I",
+      "description": "Main oscillator input (4-16MHz crystal or external clock)",
+      "altFunction": "PD0 can be remapped here via software"
+    },
+    {
+      "pin": "OSC_OUT",
+      "lqfp48": 6,
+      "type": "O",
+      "description": "Main oscillator output (connect to crystal)",
+      "altFunction": "PD1 can be remapped here via software"
+    },
+    {
+      "pin": "NRST",
+      "lqfp48": 7,
+      "type": "I/O",
+      "description": "Reset input (active LOW) with internal pull-up. Can also be configured as output."
+    },
+    {
+      "pin": "VSSA",
+      "lqfp48": 8,
+      "type": "S",
+      "description": "Analog ground reference for ADC and other analog blocks"
+    },
+    {
+      "pin": "VDDA",
+      "lqfp48": 9,
+      "type": "S",
+      "description": "Analog power supply (2.4V to 3.6V). Also serves as VREF+ on LQFP48 package."
+    },
+    {
+      "pin": "PA0",
+      "port": "A",
+      "number": 0,
+      "lqfp48": 10,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA0",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "WKUP", "peripheral": "SYSTEM", "remap": false},
+        {"name": "USART2_CTS", "peripheral": "USART2", "remap": false},
+        {"name": "ADC12_IN0", "peripheral": "ADC", "remap": false},
+        {"name": "TIM2_CH1_ETR", "peripheral": "TIM2", "remap": false}
+      ],
+      "notes": "WKUP function can wake device from Standby mode."
+    },
+    {
+      "pin": "PA1",
+      "port": "A",
+      "number": 1,
+      "lqfp48": 11,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA1",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART2_RTS", "peripheral": "USART2", "remap": false},
+        {"name": "ADC12_IN1", "peripheral": "ADC", "remap": false},
+        {"name": "TIM2_CH2", "peripheral": "TIM2", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA2",
+      "port": "A",
+      "number": 2,
+      "lqfp48": 12,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA2",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART2_TX", "peripheral": "USART2", "remap": false},
+        {"name": "ADC12_IN2", "peripheral": "ADC", "remap": false},
+        {"name": "TIM2_CH3", "peripheral": "TIM2", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA3",
+      "port": "A",
+      "number": 3,
+      "lqfp48": 13,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA3",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART2_RX", "peripheral": "USART2", "remap": false},
+        {"name": "ADC12_IN3", "peripheral": "ADC", "remap": false},
+        {"name": "TIM2_CH4", "peripheral": "TIM2", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA4",
+      "port": "A",
+      "number": 4,
+      "lqfp48": 14,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA4",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI1_NSS", "peripheral": "SPI1", "remap": false},
+        {"name": "USART2_CK", "peripheral": "USART2", "remap": false},
+        {"name": "ADC12_IN4", "peripheral": "ADC", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA5",
+      "port": "A",
+      "number": 5,
+      "lqfp48": 15,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA5",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI1_SCK", "peripheral": "SPI1", "remap": false},
+        {"name": "ADC12_IN5", "peripheral": "ADC", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA6",
+      "port": "A",
+      "number": 6,
+      "lqfp48": 16,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA6",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI1_MISO", "peripheral": "SPI1", "remap": false},
+        {"name": "ADC12_IN6", "peripheral": "ADC", "remap": false},
+        {"name": "TIM3_CH1", "peripheral": "TIM3", "remap": false},
+        {"name": "TIM1_BKIN", "peripheral": "TIM1", "remap": true}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA7",
+      "port": "A",
+      "number": 7,
+      "lqfp48": 17,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PA7",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI1_MOSI", "peripheral": "SPI1", "remap": false},
+        {"name": "ADC12_IN7", "peripheral": "ADC", "remap": false},
+        {"name": "TIM3_CH2", "peripheral": "TIM3", "remap": false},
+        {"name": "TIM1_CH1N", "peripheral": "TIM1", "remap": true}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PB0",
+      "port": "B",
+      "number": 0,
+      "lqfp48": 18,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PB0",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "ADC12_IN8", "peripheral": "ADC", "remap": false},
+        {"name": "TIM3_CH3", "peripheral": "TIM3", "remap": false},
+        {"name": "TIM1_CH2N", "peripheral": "TIM1", "remap": true}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PB1",
+      "port": "B",
+      "number": 1,
+      "lqfp48": 19,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PB1",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "ADC12_IN9", "peripheral": "ADC", "remap": false},
+        {"name": "TIM3_CH4", "peripheral": "TIM3", "remap": false},
+        {"name": "TIM1_CH3N", "peripheral": "TIM1", "remap": true}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PB2",
+      "port": "B",
+      "number": 2,
+      "lqfp48": 20,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB2-BOOT1",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "BOOT1", "peripheral": "SYSTEM", "remap": false}
+      ],
+      "notes": "BOOT1 pin sampled at reset. Used with BOOT0 to select boot mode."
+    },
+    {
+      "pin": "PB10",
+      "port": "B",
+      "number": 10,
+      "lqfp48": 21,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB10",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "I2C2_SCL", "peripheral": "I2C2", "remap": false},
+        {"name": "USART3_TX", "peripheral": "USART3", "remap": false},
+        {"name": "TIM2_CH3", "peripheral": "TIM2", "remap": true}
+      ],
+      "notes": "Conflict: I2C2_SCL and USART3_TX cannot be used simultaneously."
+    },
+    {
+      "pin": "PB11",
+      "port": "B",
+      "number": 11,
+      "lqfp48": 22,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB11",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "I2C2_SDA", "peripheral": "I2C2", "remap": false},
+        {"name": "USART3_RX", "peripheral": "USART3", "remap": false},
+        {"name": "TIM2_CH4", "peripheral": "TIM2", "remap": true}
+      ],
+      "notes": "Conflict: I2C2_SDA and USART3_RX cannot be used simultaneously."
+    },
+    {
+      "pin": "VSS_1",
+      "lqfp48": 23,
+      "type": "S",
+      "description": "Digital ground"
+    },
+    {
+      "pin": "VDD_1",
+      "lqfp48": 24,
+      "type": "S",
+      "description": "Digital power supply (2.0V to 3.6V)"
+    },
+    {
+      "pin": "PB12",
+      "port": "B",
+      "number": 12,
+      "lqfp48": 25,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB12",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI2_NSS", "peripheral": "SPI2", "remap": false},
+        {"name": "I2C2_SMBA", "peripheral": "I2C2", "remap": false},
+        {"name": "USART3_CK", "peripheral": "USART3", "remap": false},
+        {"name": "TIM1_BKIN", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PB13",
+      "port": "B",
+      "number": 13,
+      "lqfp48": 26,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB13",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI2_SCK", "peripheral": "SPI2", "remap": false},
+        {"name": "USART3_CTS", "peripheral": "USART3", "remap": false},
+        {"name": "TIM1_CH1N", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PB14",
+      "port": "B",
+      "number": 14,
+      "lqfp48": 27,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB14",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI2_MISO", "peripheral": "SPI2", "remap": false},
+        {"name": "USART3_RTS", "peripheral": "USART3", "remap": false},
+        {"name": "TIM1_CH2N", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PB15",
+      "port": "B",
+      "number": 15,
+      "lqfp48": 28,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB15",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "SPI2_MOSI", "peripheral": "SPI2", "remap": false},
+        {"name": "TIM1_CH3N", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA8",
+      "port": "A",
+      "number": 8,
+      "lqfp48": 29,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PA8",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART1_CK", "peripheral": "USART1", "remap": false},
+        {"name": "TIM1_CH1", "peripheral": "TIM1", "remap": false},
+        {"name": "MCO", "peripheral": "SYSTEM", "remap": false}
+      ],
+      "notes": "MCO (Microcontroller Clock Output) can output various internal clocks for external use."
+    },
+    {
+      "pin": "PA9",
+      "port": "A",
+      "number": 9,
+      "lqfp48": 30,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PA9",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART1_TX", "peripheral": "USART1", "remap": false},
+        {"name": "TIM1_CH2", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA10",
+      "port": "A",
+      "number": 10,
+      "lqfp48": 31,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PA10",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART1_RX", "peripheral": "USART1", "remap": false},
+        {"name": "TIM1_CH3", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": null
+    },
+    {
+      "pin": "PA11",
+      "port": "A",
+      "number": 11,
+      "lqfp48": 32,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PA11",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART1_CTS", "peripheral": "USART1", "remap": false},
+        {"name": "CANRX", "peripheral": "CAN", "remap": false},
+        {"name": "USBDM", "peripheral": "USB", "remap": false},
+        {"name": "TIM1_CH4", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": "USB D- line. CAN default RX and USB share this pin."
+    },
+    {
+      "pin": "PA12",
+      "port": "A",
+      "number": 12,
+      "lqfp48": 33,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PA12",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "USART1_RTS", "peripheral": "USART1", "remap": false},
+        {"name": "CANTX", "peripheral": "CAN", "remap": false},
+        {"name": "USBDP", "peripheral": "USB", "remap": false},
+        {"name": "TIM1_ETR", "peripheral": "TIM1", "remap": false}
+      ],
+      "notes": "USB D+ line. CAN default TX and USB share this pin."
+    },
+    {
+      "pin": "PA13",
+      "port": "A",
+      "number": 13,
+      "lqfp48": 34,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "JTMS-SWDIO",
+      "functions": [
+        {"name": "JTMS", "peripheral": "JTAG", "remap": false},
+        {"name": "SWDIO", "peripheral": "SWD", "remap": false},
+        {"name": "GPIO", "peripheral": null, "remap": true}
+      ],
+      "notes": "Debug pin. Default function is JTMS/SWDIO. GPIO requires disabling debug interface via software."
+    },
+    {
+      "pin": "VSS_2",
+      "lqfp48": 35,
+      "type": "S",
+      "description": "Digital ground"
+    },
+    {
+      "pin": "VDD_2",
+      "lqfp48": 36,
+      "type": "S",
+      "description": "Digital power supply (2.0V to 3.6V)"
+    },
+    {
+      "pin": "PA14",
+      "port": "A",
+      "number": 14,
+      "lqfp48": 37,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "JTCK-SWCLK",
+      "functions": [
+        {"name": "JTCK", "peripheral": "JTAG", "remap": false},
+        {"name": "SWCLK", "peripheral": "SWD", "remap": false},
+        {"name": "GPIO", "peripheral": null, "remap": true}
+      ],
+      "notes": "Debug pin. Default function is JTCK/SWCLK. GPIO requires disabling debug interface via software."
+    },
+    {
+      "pin": "PA15",
+      "port": "A",
+      "number": 15,
+      "lqfp48": 38,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "JTDI",
+      "functions": [
+        {"name": "JTDI", "peripheral": "JTAG", "remap": false},
+        {"name": "GPIO", "peripheral": null, "remap": true},
+        {"name": "TIM2_CH1_ETR", "peripheral": "TIM2", "remap": true},
+        {"name": "SPI1_NSS", "peripheral": "SPI1", "remap": true}
+      ],
+      "notes": "JTAG pin. Disabling JTAG (SWD-only mode) frees this pin for GPIO/SPI1_NSS/TIM2."
+    },
+    {
+      "pin": "PB3",
+      "port": "B",
+      "number": 3,
+      "lqfp48": 39,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "JTDO",
+      "functions": [
+        {"name": "JTDO", "peripheral": "JTAG", "remap": false},
+        {"name": "TRACESWO", "peripheral": "DEBUG", "remap": false},
+        {"name": "GPIO", "peripheral": null, "remap": true},
+        {"name": "TIM2_CH2", "peripheral": "TIM2", "remap": true},
+        {"name": "SPI1_SCK", "peripheral": "SPI1", "remap": true}
+      ],
+      "notes": "JTAG pin. Disabling JTAG (SWD-only mode) frees this pin for GPIO/SPI1_SCK/TIM2."
+    },
+    {
+      "pin": "PB4",
+      "port": "B",
+      "number": 4,
+      "lqfp48": 40,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "JNTRST",
+      "functions": [
+        {"name": "JNTRST", "peripheral": "JTAG", "remap": false},
+        {"name": "GPIO", "peripheral": null, "remap": true},
+        {"name": "TIM3_CH1", "peripheral": "TIM3", "remap": true},
+        {"name": "SPI1_MISO", "peripheral": "SPI1", "remap": true}
+      ],
+      "notes": "JTAG reset pin. Disabling JTAG (SWD-only mode) frees this pin for GPIO/SPI1_MISO/TIM3."
+    },
+    {
+      "pin": "PB5",
+      "port": "B",
+      "number": 5,
+      "lqfp48": 41,
+      "type": "I/O",
+      "fiveTolerant": false,
+      "resetState": "PB5",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "I2C1_SMBA", "peripheral": "I2C1", "remap": false},
+        {"name": "TIM3_CH2", "peripheral": "TIM3", "remap": true},
+        {"name": "SPI1_MOSI", "peripheral": "SPI1", "remap": true}
+      ],
+      "notes": "NOT 5V tolerant (exception among Port B pins)."
+    },
+    {
+      "pin": "PB6",
+      "port": "B",
+      "number": 6,
+      "lqfp48": 42,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB6",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "I2C1_SCL", "peripheral": "I2C1", "remap": false},
+        {"name": "TIM4_CH1", "peripheral": "TIM4", "remap": false},
+        {"name": "USART1_TX", "peripheral": "USART1", "remap": true}
+      ],
+      "notes": "I2C requires external pull-up resistors (typically 4.7K to 10K ohms)."
+    },
+    {
+      "pin": "PB7",
+      "port": "B",
+      "number": 7,
+      "lqfp48": 43,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB7",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "I2C1_SDA", "peripheral": "I2C1", "remap": false},
+        {"name": "TIM4_CH2", "peripheral": "TIM4", "remap": false},
+        {"name": "USART1_RX", "peripheral": "USART1", "remap": true}
+      ],
+      "notes": "I2C requires external pull-up resistors (typically 4.7K to 10K ohms)."
+    },
+    {
+      "pin": "BOOT0",
+      "lqfp48": 44,
+      "type": "I",
+      "description": "Boot mode selection input. Sampled at reset. LOW=boot from main Flash, HIGH=boot from System Memory (bootloader) or SRAM depending on BOOT1 (PB2)."
+    },
+    {
+      "pin": "PB8",
+      "port": "B",
+      "number": 8,
+      "lqfp48": 45,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB8",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "TIM4_CH3", "peripheral": "TIM4", "remap": false},
+        {"name": "I2C1_SCL", "peripheral": "I2C1", "remap": true},
+        {"name": "CANRX", "peripheral": "CAN", "remap": true}
+      ],
+      "notes": "Alternate I2C1_SCL and CAN_RX location (remap required)."
+    },
+    {
+      "pin": "PB9",
+      "port": "B",
+      "number": 9,
+      "lqfp48": 46,
+      "type": "I/O",
+      "fiveTolerant": true,
+      "resetState": "PB9",
+      "functions": [
+        {"name": "GPIO", "peripheral": null, "remap": false},
+        {"name": "TIM4_CH4", "peripheral": "TIM4", "remap": false},
+        {"name": "I2C1_SDA", "peripheral": "I2C1", "remap": true},
+        {"name": "CANTX", "peripheral": "CAN", "remap": true}
+      ],
+      "notes": "Alternate I2C1_SDA and CAN_TX location (remap required)."
+    },
+    {
+      "pin": "VSS_3",
+      "lqfp48": 47,
+      "type": "S",
+      "description": "Digital ground"
+    },
+    {
+      "pin": "VDD_3",
+      "lqfp48": 48,
+      "type": "S",
+      "description": "Digital power supply (2.0V to 3.6V)"
+    }
+  ],
+  "peripherals": {
+    "USART1": {
+      "default": {"TX": "PA9", "RX": "PA10", "CK": "PA8", "CTS": "PA11", "RTS": "PA12"},
+      "remap": {"TX": "PB6", "RX": "PB7"},
+      "bus": "APB2",
+      "maxClock": "72MHz"
+    },
+    "USART2": {
+      "default": {"TX": "PA2", "RX": "PA3", "CK": "PA4", "CTS": "PA0", "RTS": "PA1"},
+      "remap": null,
+      "bus": "APB1",
+      "maxClock": "36MHz"
+    },
+    "USART3": {
+      "default": {"TX": "PB10", "RX": "PB11", "CK": "PB12", "CTS": "PB13", "RTS": "PB14"},
+      "remap": null,
+      "bus": "APB1",
+      "maxClock": "36MHz",
+      "notes": "Default pins conflict with I2C2."
+    },
+    "SPI1": {
+      "default": {"SCK": "PA5", "MISO": "PA6", "MOSI": "PA7", "NSS": "PA4"},
+      "remap": {"SCK": "PB3", "MISO": "PB4", "MOSI": "PB5", "NSS": "PA15"},
+      "bus": "APB2",
+      "maxClock": "18MHz",
+      "notes": "Remap uses JTAG pins - requires disabling JTAG (SWD still available)."
+    },
+    "SPI2": {
+      "default": {"SCK": "PB13", "MISO": "PB14", "MOSI": "PB15", "NSS": "PB12"},
+      "remap": null,
+      "bus": "APB1",
+      "maxClock": "18MHz"
+    },
+    "I2C1": {
+      "default": {"SCL": "PB6", "SDA": "PB7", "SMBA": "PB5"},
+      "remap": {"SCL": "PB8", "SDA": "PB9"},
+      "bus": "APB1",
+      "notes": "Requires external pull-up resistors. Internal pull-ups are too weak (~40K ohms)."
+    },
+    "I2C2": {
+      "default": {"SCL": "PB10", "SDA": "PB11", "SMBA": "PB12"},
+      "remap": null,
+      "bus": "APB1",
+      "notes": "Conflicts with USART3 default pins."
+    },
+    "CAN": {
+      "default": {"RX": "PA11", "TX": "PA12"},
+      "remap": {"RX": "PB8", "TX": "PB9"},
+      "notes": "Default pins shared with USB."
+    },
+    "USB": {
+      "pins": {"DM": "PA11", "DP": "PA12"},
+      "notes": "Shares pins with CAN default mapping. Cannot use both simultaneously."
+    },
+    "TIM1": {
+      "type": "Advanced",
+      "channels": {
+        "CH1": {"default": "PA8"},
+        "CH2": {"default": "PA9"},
+        "CH3": {"default": "PA10"},
+        "CH4": {"default": "PA11"},
+        "CH1N": {"default": "PB13", "remap": "PA7"},
+        "CH2N": {"default": "PB14", "remap": "PB0"},
+        "CH3N": {"default": "PB15", "remap": "PB1"},
+        "ETR": {"default": "PA12"},
+        "BKIN": {"default": "PB12", "remap": "PA6"}
+      },
+      "notes": "Advanced timer with complementary outputs and dead-time generation for motor control."
+    },
+    "TIM2": {
+      "type": "General Purpose",
+      "channels": {
+        "CH1_ETR": {"default": "PA0", "remap": "PA15"},
+        "CH2": {"default": "PA1", "remap": "PB3"},
+        "CH3": {"default": "PA2", "remap": "PB10"},
+        "CH4": {"default": "PA3", "remap": "PB11"}
+      }
+    },
+    "TIM3": {
+      "type": "General Purpose",
+      "channels": {
+        "CH1": {"default": "PA6", "remap": "PB4"},
+        "CH2": {"default": "PA7", "remap": "PB5"},
+        "CH3": {"default": "PB0"},
+        "CH4": {"default": "PB1"}
+      }
+    },
+    "TIM4": {
+      "type": "General Purpose",
+      "channels": {
+        "CH1": {"default": "PB6"},
+        "CH2": {"default": "PB7"},
+        "CH3": {"default": "PB8"},
+        "CH4": {"default": "PB9"}
+      },
+      "notes": "Default CH1/CH2 pins conflict with I2C1 default pins."
+    },
+    "ADC": {
+      "channels": {
+        "IN0": "PA0",
+        "IN1": "PA1",
+        "IN2": "PA2",
+        "IN3": "PA3",
+        "IN4": "PA4",
+        "IN5": "PA5",
+        "IN6": "PA6",
+        "IN7": "PA7",
+        "IN8": "PB0",
+        "IN9": "PB1",
+        "IN16": "Internal temperature sensor",
+        "IN17": "Internal VREFINT"
+      },
+      "resolution": "12-bit",
+      "notes": "10 external channels on LQFP48. ADC input pins are NOT 5V tolerant."
+    }
+  },
+  "conflicts": [
+    {
+      "pins": ["PA11", "PA12"],
+      "peripherals": ["USB", "CAN", "USART1", "TIM1"],
+      "description": "USB D+/D- and CAN TX/RX share these pins. Cannot use USB and CAN default mapping simultaneously."
+    },
+    {
+      "pins": ["PB10", "PB11"],
+      "peripherals": ["I2C2", "USART3"],
+      "description": "I2C2 and USART3 share these pins. Cannot use both simultaneously."
+    },
+    {
+      "pins": ["PB6", "PB7"],
+      "peripherals": ["I2C1", "TIM4"],
+      "description": "I2C1 default pins conflict with TIM4 CH1/CH2."
+    },
+    {
+      "pins": ["PA13", "PA14"],
+      "peripherals": ["SWD", "JTAG", "GPIO"],
+      "description": "SWD/JTAG debug interface. Using as GPIO disables debugging."
+    },
+    {
+      "pins": ["PA15", "PB3", "PB4"],
+      "peripherals": ["JTAG", "SPI1_remap", "TIM2_remap", "TIM3_remap"],
+      "description": "JTAG pins. Disabling JTAG (keeping SWD) frees these for SPI1 remap and other functions."
+    }
+  ],
+  "bootModes": {
+    "description": "Boot mode selected by BOOT0 (pin 44) and BOOT1/PB2 (pin 20) sampled at reset",
+    "modes": [
+      {"BOOT0": 0, "BOOT1": "X", "mode": "Main Flash memory", "description": "Normal operation - execute from internal Flash at 0x08000000"},
+      {"BOOT0": 1, "BOOT1": 0, "mode": "System memory", "description": "Execute built-in bootloader (for UART/USB programming) at 0x1FFFF000"},
+      {"BOOT0": 1, "BOOT1": 1, "mode": "Embedded SRAM", "description": "Execute from SRAM at 0x20000000 (for debugging)"}
+    ]
+  },
+  "electricalCharacteristics": {
+    "vdd": {"min": 2.0, "typical": 3.3, "max": 3.6, "unit": "V"},
+    "vdda": {"min": 2.4, "max": 3.6, "unit": "V", "notes": "Must be >= VDD"},
+    "gpioOutputCurrent": {"max": 25, "recommended": 8, "unit": "mA", "notes": "Per pin, absolute maximum"},
+    "gpioTotalCurrent": {"max": 150, "unit": "mA", "description": "Sum of all GPIO and peripheral I/O pins"},
+    "fiveVoltTolerance": "Pins marked FT (five-volt tolerant) can accept up to 5.5V input when configured as input or open-drain output",
+    "inputVoltage": {"nonFT": {"max": "VDD + 0.3V"}, "FT": {"max": "5.5V"}}
+  }
+}

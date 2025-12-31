@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stm32-ai-agent",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-12-30",
+  "observability": {
+    "enabled": true
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "stm32-pins-db",
+      "database_id": "ff096d0b-a906-4496-ac2f-f6a20ac66be2"
+    }
+  ]
+}

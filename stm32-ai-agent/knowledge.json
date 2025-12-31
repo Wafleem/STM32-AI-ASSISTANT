@@ -1,0 +1,271 @@
+{
+  "metadata": {
+    "chip": "STM32F103C8T6",
+    "sources": [
+      "DS5319 Rev 20 - STM32F103x8/xB Datasheet",
+      "RM0008 Rev 21 - STM32F10xxx Reference Manual"
+    ],
+    "description": "Curated knowledge base for STM32F103C8T6 AI assistant",
+    "created": "2024-12-29"
+  },
+  "chunks": [
+    {
+      "id": "chip_overview",
+      "topic": "general",
+      "keywords": ["overview", "specs", "specifications", "what is", "about"],
+      "content": "The STM32F103C8T6 is a medium-density performance line ARM Cortex-M3 microcontroller. It features 64KB Flash memory, 20KB SRAM, runs at up to 72MHz, and comes in a 48-pin LQFP package. It includes 2 ADCs (12-bit), 3 general-purpose 16-bit timers, 1 PWM timer, 2 I2C interfaces, 2 SPI interfaces, 3 USARTs, USB, CAN, and 37 GPIO pins."
+    },
+    {
+      "id": "memory_specs",
+      "topic": "memory",
+      "keywords": ["memory", "flash", "RAM", "SRAM", "storage", "size"],
+      "content": "The STM32F103C8T6 has 64KB of Flash memory for program storage and 20KB of SRAM for data. The Flash memory is located at address 0x08000000 and SRAM at 0x20000000. The memory is organized in Little Endian format. Flash can be programmed in 16-bit half-words and has a typical endurance of 10,000 write/erase cycles."
+    },
+    {
+      "id": "clock_sources",
+      "topic": "clock",
+      "keywords": ["clock", "oscillator", "crystal", "HSE", "HSI", "frequency", "MHz", "speed"],
+      "content": "The STM32F103C8T6 has multiple clock sources. The HSI (High Speed Internal) is an 8MHz factory-calibrated RC oscillator. The HSE (High Speed External) supports 4-16MHz crystals. The LSI is a 40kHz internal RC for watchdog/RTC. The LSE is 32.768kHz for RTC. The maximum system clock (SYSCLK) is 72MHz, achieved by using PLL multiplication of the HSE or HSI/2."
+    },
+    {
+      "id": "clock_configuration",
+      "topic": "clock",
+      "keywords": ["PLL", "configure", "setup", "72MHz", "maximum speed", "clock tree"],
+      "content": "To achieve maximum 72MHz speed: Use an 8MHz external crystal on HSE, enable the PLL with a multiplication factor of 9 (8MHz x 9 = 72MHz). The AHB bus runs at SYSCLK speed (72MHz max). APB1 is limited to 36MHz max (use prescaler /2 when SYSCLK is 72MHz). APB2 runs at full SYSCLK speed. Flash wait states must be configured: 0 wait states for 0-24MHz, 1 wait state for 24-48MHz, 2 wait states for 48-72MHz."
+    },
+    {
+      "id": "bus_architecture",
+      "topic": "architecture",
+      "keywords": ["bus", "APB1", "APB2", "AHB", "peripheral", "speed"],
+      "content": "The STM32F103 uses a Harvard architecture with separate instruction and data buses. The AHB (Advanced High-performance Bus) connects the core, DMA, and memory at up to 72MHz. Two APB buses connect peripherals: APB2 runs at full speed (72MHz) and connects fast peripherals like ADC, SPI1, USART1, TIM1, and GPIO. APB1 is limited to 36MHz and connects slower peripherals like I2C, SPI2, USART2/3, TIM2-4."
+    },
+    {
+      "id": "gpio_modes",
+      "topic": "GPIO",
+      "keywords": ["GPIO", "mode", "input", "output", "push-pull", "open-drain", "configure"],
+      "content": "GPIO pins can be configured in multiple modes: Input (floating, pull-up, pull-down, or analog), Output (push-pull or open-drain), and Alternate Function (push-pull or open-drain). Output speeds are 2MHz, 10MHz, or 50MHz. After reset, all GPIO pins are in Input Floating mode except JTAG pins (PA13/PA14/PA15/PB3/PB4) which default to their debug functions. Each pin has weak internal pull-up (~40K) and pull-down resistors."
+    },
+    {
+      "id": "gpio_5v_tolerance",
+      "topic": "GPIO",
+      "keywords": ["5V", "tolerant", "voltage", "FT", "input", "level"],
+      "content": "Pins marked 'FT' (Five-volt Tolerant) can accept up to 5.5V input when configured as input or open-drain output. On the STM32F103C8T6: PA8-PA15 are 5V tolerant, PB2-PB4 and PB6-PB15 are 5V tolerant (except PB5), PA0-PA7 are NOT 5V tolerant (they are ADC pins), PB0-PB1 are NOT 5V tolerant (ADC pins), PC13-PC15 are NOT 5V tolerant. Never apply 5V to non-FT pins or when pin is configured as push-pull output."
+    },
+    {
+      "id": "gpio_current",
+      "topic": "GPIO",
+      "keywords": ["current", "mA", "drive", "LED", "sink", "source"],
+      "content": "Each GPIO pin can sink or source up to 25mA (absolute maximum), but 8mA is recommended for reliable operation. The total current for all GPIO pins combined must not exceed 150mA. PC13-PC15 are special: they're powered through a switch limited to 3mA total, can only operate at 2MHz speed, and should not be used to drive loads like LEDs. For LED driving on other pins, use a series resistor to limit current."
+    },
+    {
+      "id": "jtag_swd_pins",
+      "topic": "GPIO",
+      "keywords": ["JTAG", "SWD", "debug", "PA13", "PA14", "PA15", "PB3", "PB4", "programming"],
+      "content": "After reset, PA13/PA14/PA15/PB3/PB4 are configured for JTAG debugging. PA13 is SWDIO, PA14 is SWCLK (these are needed for SWD programming). To use PA15, PB3, PB4 as GPIO or for SPI1 remap, you must disable JTAG via the AFIO_MAPR register (keeping SWD enabled). If you disable both JTAG and SWD by using PA13/PA14 as GPIO, you can only reprogram the chip using BOOT0 pin to enter bootloader mode."
+    },
+    {
+      "id": "adc_overview",
+      "topic": "ADC",
+      "keywords": ["ADC", "analog", "digital", "convert", "resolution", "bits"],
+      "content": "The STM32F103C8T6 has two 12-bit ADCs (ADC1 and ADC2) with up to 10 external input channels. Resolution is 12 bits (0-4095). Input voltage range is 0V to VREF+ (typically 3.3V). Conversion time is 1µs at 56MHz ADC clock. The ADC can operate in single, continuous, scan, or discontinuous modes. It supports DMA for automatic data transfer. There are also two internal channels: temperature sensor and internal reference voltage."
+    },
+    {
+      "id": "adc_channels",
+      "topic": "ADC",
+      "keywords": ["ADC", "channel", "pin", "input", "IN0", "IN1"],
+      "content": "ADC channels on STM32F103C8T6: IN0=PA0, IN1=PA1, IN2=PA2, IN3=PA3, IN4=PA4, IN5=PA5, IN6=PA6, IN7=PA7, IN8=PB0, IN9=PB1. Internal channels: IN16=Temperature sensor, IN17=VREFINT (internal 1.2V reference). All external ADC pins are NOT 5V tolerant. The ADC input impedance is about 12kΩ, so source impedance should be low (under 10kΩ) for accurate readings."
+    },
+    {
+      "id": "adc_clock",
+      "topic": "ADC",
+      "keywords": ["ADC", "clock", "prescaler", "speed", "sample"],
+      "content": "ADC clock is derived from APB2 clock (PCLK2) via prescaler. Maximum ADC clock is 14MHz. With 72MHz SYSCLK, use prescaler of 6 to get 12MHz ADC clock. Conversion time = sampling time + 12.5 ADC cycles. Minimum sampling time is 1.5 cycles. Total minimum conversion time at 14MHz = (1.5 + 12.5) / 14MHz = 1µs. For high-impedance sources, increase sampling time up to 239.5 cycles."
+    },
+    {
+      "id": "i2c_overview",
+      "topic": "I2C",
+      "keywords": ["I2C", "interface", "bus", "two-wire", "serial"],
+      "content": "The STM32F103C8T6 has two I2C interfaces (I2C1 and I2C2) supporting Standard mode (100kHz) and Fast mode (400kHz). Features include 7-bit and 10-bit addressing, multi-master capability, DMA support, and SMBus/PMBus compatibility. I2C is a two-wire interface using SDA (data) and SCL (clock) lines, both requiring external pull-up resistors."
+    },
+    {
+      "id": "i2c_pins",
+      "topic": "I2C",
+      "keywords": ["I2C", "pin", "SDA", "SCL", "PB6", "PB7", "PB10", "PB11", "remap"],
+      "content": "I2C1 default pins: SCL=PB6, SDA=PB7. I2C1 can be remapped to: SCL=PB8, SDA=PB9. I2C2 pins (no remap available): SCL=PB10, SDA=PB11. Note that I2C2 pins conflict with USART3 (PB10=USART3_TX, PB11=USART3_RX) - you cannot use both I2C2 and USART3 simultaneously. I2C1 default pins also share with TIM4 CH1/CH2."
+    },
+    {
+      "id": "i2c_pullups",
+      "topic": "I2C",
+      "keywords": ["I2C", "pull-up", "resistor", "external", "value", "4.7K"],
+      "content": "I2C requires external pull-up resistors on SDA and SCL lines. The internal pull-ups (~40kΩ) are too weak for reliable I2C communication. Recommended values: 4.7kΩ for 100kHz Standard mode, 2.2kΩ-3.3kΩ for 400kHz Fast mode. Lower resistance allows faster rise times but increases power consumption. Pull-ups connect between the I2C line and VDD (3.3V). Many sensor breakout boards include pull-ups - check before adding your own to avoid too-low resistance."
+    },
+    {
+      "id": "spi_overview",
+      "topic": "SPI",
+      "keywords": ["SPI", "interface", "serial", "peripheral"],
+      "content": "The STM32F103C8T6 has two SPI interfaces (SPI1 and SPI2). SPI1 is on APB2 (up to 18Mbit/s at 72MHz). SPI2 is on APB1 (up to 18Mbit/s at 36MHz). Features include full-duplex synchronous transfer, 8 or 16-bit data frame, master or slave mode, hardware CRC calculation, and DMA capability. SPI uses 4 signals: SCK (clock), MOSI (Master Out Slave In), MISO (Master In Slave Out), and NSS (slave select)."
+    },
+    {
+      "id": "spi_pins",
+      "topic": "SPI",
+      "keywords": ["SPI", "pin", "SCK", "MOSI", "MISO", "NSS", "remap"],
+      "content": "SPI1 default pins: SCK=PA5, MISO=PA6, MOSI=PA7, NSS=PA4. SPI1 remap pins: SCK=PB3, MISO=PB4, MOSI=PB5, NSS=PA15. Using SPI1 remap requires disabling JTAG (PB3/PB4 are JTAG pins). SPI2 pins (no remap): SCK=PB13, MISO=PB14, MOSI=PB15, NSS=PB12. The NSS pin can be managed by hardware or software; software NSS (using any GPIO) is more flexible."
+    },
+    {
+      "id": "spi_clock",
+      "topic": "SPI",
+      "keywords": ["SPI", "clock", "speed", "baud", "prescaler", "CPOL", "CPHA"],
+      "content": "SPI clock is derived from the peripheral bus clock via prescaler (2, 4, 8, 16, 32, 64, 128, or 256). SPI1 max speed: 72MHz/2 = 36MHz as master. SPI2 max speed: 36MHz/2 = 18MHz as master. Clock polarity (CPOL) and phase (CPHA) are configurable for compatibility with different slave devices. Mode 0: CPOL=0, CPHA=0 (clock idle low, sample on rising edge). Mode 3: CPOL=1, CPHA=1 (clock idle high, sample on falling edge)."
+    },
+    {
+      "id": "usart_overview",
+      "topic": "USART",
+      "keywords": ["USART", "UART", "serial", "RS232", "communication"],
+      "content": "The STM32F103C8T6 has three USARTs. USART1 is on APB2 (72MHz), supporting up to 4.5Mbit/s. USART2 and USART3 are on APB1 (36MHz). All support full-duplex asynchronous communication, synchronous mode, LIN, IrDA, and Smartcard protocols. Features include programmable baud rate, 8 or 9-bit data, 1 or 2 stop bits, parity control, DMA support, and hardware flow control (CTS/RTS)."
+    },
+    {
+      "id": "usart_pins",
+      "topic": "USART",
+      "keywords": ["USART", "UART", "pin", "TX", "RX", "remap"],
+      "content": "USART1 default: TX=PA9, RX=PA10. USART1 remap: TX=PB6, RX=PB7. USART2 (no remap on 48-pin package): TX=PA2, RX=PA3. USART3 default: TX=PB10, RX=PB11. Note: USART3 pins conflict with I2C2. For basic UART communication, you only need TX and RX pins. Connect TX of one device to RX of another, and vice versa. For RS232 level conversion, use a MAX232 or similar level shifter."
+    },
+    {
+      "id": "usart_baud_rate",
+      "topic": "USART",
+      "keywords": ["USART", "UART", "baud", "rate", "speed", "115200"],
+      "content": "USART baud rate is calculated from the peripheral clock using a fractional divider. Common baud rates: 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600. USART1 max is about 4.5Mbit/s at 72MHz. For accurate baud rates, the peripheral clock should be evenly divisible. At 72MHz, 115200 baud works well. The BRR register contains a 12-bit mantissa and 4-bit fraction for precise baud generation."
+    },
+    {
+      "id": "timer_overview",
+      "topic": "Timer",
+      "keywords": ["timer", "TIM", "PWM", "counter", "pulse"],
+      "content": "STM32F103C8T6 has 4 timers. TIM1 is an advanced 16-bit timer with complementary outputs, dead-time, and break input for motor control. TIM2, TIM3, TIM4 are general-purpose 16-bit timers with 4 capture/compare channels each. All timers support PWM output, input capture, output compare, encoder interface, and can trigger DMA/interrupts. Timer clock is 72MHz when APB prescaler is >1 (timers get 2x the APB clock)."
+    },
+    {
+      "id": "timer_pwm",
+      "topic": "Timer",
+      "keywords": ["PWM", "pulse", "width", "modulation", "duty", "frequency"],
+      "content": "To generate PWM: Set timer period (ARR register) to define frequency: PWM_freq = Timer_clock / (PSC+1) / (ARR+1). Set capture/compare value (CCR) to define duty cycle: Duty = CCR / ARR × 100%. Example for 1kHz PWM at 72MHz timer clock: PSC=71, ARR=999 gives exactly 1kHz. CCR=500 gives 50% duty cycle. PWM resolution depends on ARR value - higher ARR means finer duty cycle control but lower maximum frequency."
+    },
+    {
+      "id": "usb_overview",
+      "topic": "USB",
+      "keywords": ["USB", "interface", "device"],
+      "content": "The STM32F103C8T6 has a USB 2.0 Full-Speed (12Mbit/s) device interface. It supports control, bulk, interrupt, and isochronous transfers. USB uses pins PA11 (D-) and PA12 (D+). These pins are shared with CAN - you cannot use USB and CAN default pins simultaneously. For USB, the PLL must output 48MHz or 72MHz (USB prescaler divides by 1 or 1.5). A 1.5kΩ pull-up on D+ is required (some boards have this built-in)."
+    },
+    {
+      "id": "can_overview",
+      "topic": "CAN",
+      "keywords": ["CAN", "bus", "automotive", "controller", "area", "network"],
+      "content": "The STM32F103C8T6 has one CAN 2.0B controller supporting 1Mbit/s. CAN default pins: RX=PA11, TX=PA12 (shared with USB). CAN remap: RX=PB8, TX=PB9. CAN requires an external transceiver (like MCP2551 or SN65HVD230) to convert logic levels to CAN bus differential signals. The CAN controller has 3 transmit and 2 receive mailboxes with 14 configurable filter banks."
+    },
+    {
+      "id": "dma_overview",
+      "topic": "DMA",
+      "keywords": ["DMA", "direct", "memory", "access", "transfer"],
+      "content": "The STM32F103C8T6 has a 7-channel DMA controller (DMA1). DMA allows memory-to-memory, peripheral-to-memory, and memory-to-peripheral transfers without CPU intervention. Each channel has configurable priority and supports circular mode for continuous transfers. DMA is useful for high-speed ADC sampling, UART/SPI buffering, and reducing CPU load. Channels are assigned to specific peripherals (e.g., DMA1_CH1 for ADC1)."
+    },
+    {
+      "id": "boot_modes",
+      "topic": "Boot",
+      "keywords": ["boot", "BOOT0", "BOOT1", "bootloader", "flash", "programming"],
+      "content": "Boot mode is selected by BOOT0 pin and BOOT1 (PB2) sampled at reset. BOOT0=0 (any BOOT1): Boot from main Flash at 0x08000000 - normal operation. BOOT0=1, BOOT1=0: Boot from System Memory at 0x1FFFF000 - built-in bootloader for UART/USB programming. BOOT0=1, BOOT1=1: Boot from SRAM at 0x20000000 - for debugging. To enter bootloader: Set BOOT0 high, keep BOOT1 low, reset the chip. The bootloader supports programming via USART1 (PA9/PA10)."
+    },
+    {
+      "id": "power_supply",
+      "topic": "Power",
+      "keywords": ["power", "voltage", "VDD", "VDDA", "supply", "3.3V"],
+      "content": "Operating voltage range: VDD = 2.0V to 3.6V, typical 3.3V. VDDA (analog supply) must be 2.4V to 3.6V and equal to or higher than VDD. Power consumption: ~36mA at 72MHz in Run mode, down to 2µA in Standby mode. The chip has internal voltage regulator. For stable operation, provide adequate decoupling capacitors: 100nF ceramic on each VDD pin, 4.7µF + 100nF on VDDA, 100nF on VBAT."
+    },
+    {
+      "id": "reset_circuit",
+      "topic": "Reset",
+      "keywords": ["reset", "NRST", "power-on", "circuit"],
+      "content": "The NRST pin is active-low reset input with internal pull-up. Reset sources: external reset (NRST pin low), power-on/power-down reset, watchdog reset, software reset, low-power mode reset. Minimum reset pulse width is 20µs. A simple reset circuit: 100nF capacitor from NRST to GND with optional 10K resistor to VDD. For noise immunity in industrial applications, add a reset supervisor IC."
+    },
+    {
+      "id": "watchdog",
+      "topic": "Watchdog",
+      "keywords": ["watchdog", "IWDG", "WWDG", "timeout", "reset"],
+      "content": "Two watchdog timers are available. The Independent Watchdog (IWDG) uses the 40kHz LSI clock, provides timeout from 100µs to 26 seconds, and cannot be disabled once started. The Window Watchdog (WWDG) uses APB1 clock, must be refreshed within a timing window (not too early, not too late), and generates an early warning interrupt. Use IWDG for reliability; WWDG for detecting code timing issues."
+    },
+    {
+      "id": "low_power",
+      "topic": "Power",
+      "keywords": ["sleep", "stop", "standby", "low power", "wake"],
+      "content": "Three low-power modes: Sleep mode stops CPU but peripherals run (~14mA at 72MHz, HSI on). Stop mode stops all clocks but retains SRAM (~20µA, all clocks off). Standby mode is lowest power (~2µA) but loses SRAM content. Wake-up from Sleep: any interrupt. Wake-up from Stop: EXTI line, RTC alarm. Wake-up from Standby: WKUP pin (PA0), RTC alarm, NRST, IWDG. After Stop/Standby, HSI is selected as clock source."
+    },
+    {
+      "id": "rtc",
+      "topic": "RTC",
+      "keywords": ["RTC", "real-time", "clock", "calendar", "backup"],
+      "content": "The RTC provides a seconds counter (not calendar - software must convert). Clock sources: LSE (32.768kHz crystal on PC14/PC15), LSI (~40kHz), or HSE/128. LSE gives best accuracy. RTC continues running in Stop and Standby modes if VBAT is supplied. RTC alarm can wake the chip from low-power modes. The 20-byte backup registers also remain powered by VBAT. For battery backup, connect a 3V coin cell to VBAT pin."
+    },
+    {
+      "id": "interrupts_nvic",
+      "topic": "Interrupts",
+      "keywords": ["interrupt", "NVIC", "priority", "IRQ", "handler"],
+      "content": "The Cortex-M3 NVIC supports 43 maskable interrupt channels with 16 priority levels (4 bits). Priority grouping allows splitting into preemption and sub-priority. Lower number = higher priority. Common interrupts: EXTI0-4 (individual GPIO), EXTI9_5 and EXTI15_10 (grouped GPIO), TIM1-4, USART1-3, SPI1-2, I2C1-2, ADC1-2, DMA1 channels. Use __enable_irq() and __disable_irq() for global interrupt control."
+    },
+    {
+      "id": "exti",
+      "topic": "Interrupts",
+      "keywords": ["EXTI", "external", "interrupt", "GPIO", "edge", "trigger"],
+      "content": "External interrupts (EXTI) can be triggered by any GPIO pin. Each EXTI line (0-15) can be connected to the corresponding pin number of any port (e.g., EXTI0 can be PA0, PB0, or PC0, but not multiple simultaneously). Trigger on rising edge, falling edge, or both. EXTI lines 0-4 have dedicated IRQ handlers; 5-9 share one handler; 10-15 share another. Configure via AFIO_EXTICR registers and EXTI registers."
+    },
+    {
+      "id": "flash_programming",
+      "topic": "Flash",
+      "keywords": ["flash", "program", "write", "erase", "unlock"],
+      "content": "Flash programming: First unlock with key sequence (KEY1=0x45670123, KEY2=0xCDEF89AB). Erase before writing (sets all bits to 1). Page erase takes ~20ms. Programming is 16-bit half-word at a time. Write takes ~20µs per half-word. Lock after programming for protection. Mass erase erases entire Flash. Option bytes control read/write protection and watchdog configuration. Be careful: erasing or corrupting Flash near 0x08000000 can brick the chip."
+    },
+    {
+      "id": "common_mistakes",
+      "topic": "Troubleshooting",
+      "keywords": ["problem", "mistake", "error", "not working", "debug", "troubleshoot"],
+      "content": "Common STM32 mistakes: 1) Forgetting to enable peripheral clock (RCC_APBxENR). 2) Not configuring GPIO alternate function mode. 3) Missing I2C pull-ups or using internal pull-ups (too weak). 4) Applying 5V to non-FT pins. 5) JTAG pins not freed for GPIO use. 6) Wrong Flash wait states for clock speed. 7) APB1 running above 36MHz. 8) Incorrect baud rate calculation. 9) Floating unused inputs causing excess current. 10) BOOT0 floating or pulled high, entering bootloader instead of running Flash code."
+    },
+    {
+      "id": "development_tools",
+      "topic": "Development",
+      "keywords": ["tool", "IDE", "program", "debug", "ST-Link", "development"],
+      "content": "Development tools for STM32: IDEs include STM32CubeIDE (free, official), Keil MDK, IAR EWARM, PlatformIO with VSCode. Programming/debugging via ST-Link (SWD interface), J-Link, or UART bootloader. STM32CubeMX generates initialization code. Libraries: HAL (Hardware Abstraction Layer) for portability, or LL (Low-Level) for performance. CMSIS provides core peripheral access. OpenOCD supports ST-Link for open-source toolchains."
+    },
+    {
+      "id": "pin_conflicts_summary",
+      "topic": "Conflicts",
+      "keywords": ["conflict", "share", "cannot", "both", "same time"],
+      "content": "Key pin conflicts on STM32F103C8T6: PA11/PA12 shared by USB, CAN, USART1_CTS/RTS, TIM1. PB10/PB11 shared by I2C2 and USART3 - cannot use both. PB6/PB7 shared by I2C1 and TIM4 CH1/CH2. PA13/PA14 are SWD debug pins - using as GPIO disables debugging. PA15/PB3/PB4 are JTAG pins - must disable JTAG to use for SPI1 remap or GPIO. PA5/PA6/PA7 shared between SPI1 and ADC channels."
+    },
+    {
+      "id": "sensor_wiring_mpu6050",
+      "topic": "Sensors",
+      "keywords": ["MPU6050", "GY-521", "accelerometer", "gyroscope", "IMU", "wire", "connect"],
+      "content": "MPU6050/GY-521 wiring to STM32F103C8T6: VCC→3.3V, GND→GND, SCL→PB6 (I2C1_SCL), SDA→PB7 (I2C1_SDA). Optional: INT→any GPIO for interrupt, AD0→GND for address 0x68 or VCC for 0x69. Most GY-521 modules have built-in pull-ups. If using I2C2: SCL→PB10, SDA→PB11. Configure I2C for 400kHz. The MPU6050 is 3.3V compatible; do not power from 5V if using 3.3V logic."
+    },
+    {
+      "id": "sensor_wiring_spi_generic",
+      "topic": "Sensors",
+      "keywords": ["SPI", "sensor", "wire", "connect", "SD", "card", "display"],
+      "content": "Generic SPI device wiring: SCK→PA5 (SPI1_SCK), MISO→PA6 (SPI1_MISO), MOSI→PA7 (SPI1_MOSI), CS→any GPIO (e.g., PA4). For SD card modules, add 10K pull-up on MISO. Most SPI devices are active-low chip select. If using SPI2: SCK→PB13, MISO→PB14, MOSI→PB15, CS→any GPIO. For 3.3V-only devices, do not connect to 5V signals. Level shifter needed if interfacing with 5V SPI devices."
+    },
+    {
+      "id": "sensor_wiring_uart_gps",
+      "topic": "Sensors",
+      "keywords": ["GPS", "UART", "serial", "wire", "connect", "NEO"],
+      "content": "GPS module (e.g., NEO-6M) wiring: VCC→3.3V (or 5V if module has regulator), GND→GND, TX (GPS)→PA10 (USART1_RX), RX (GPS)→PA9 (USART1_TX). Note TX connects to RX and vice versa. Default baud rate usually 9600. GPS modules output NMEA sentences continuously. If using USART2: TX→PA3, RX→PA2. Some GPS modules are 3.3V only - check before connecting to 5V."
+    },
+    {
+      "id": "ethernet_overview",
+      "topic": "Ethernet",
+      "keywords": ["ethernet", "network", "MAC", "PHY", "connectivity"],
+      "content": "Note: The STM32F103C8T6 does NOT have Ethernet capability. Ethernet is only available on STM32F107 'connectivity line' devices, not the STM32F103 'performance line'. For network connectivity with STM32F103, use external modules like W5500 (SPI Ethernet), ENC28J60 (SPI Ethernet), or ESP8266/ESP32 (WiFi via UART/SPI). The W5500 is recommended for ease of use as it handles the TCP/IP stack internally."
+    },
+    {
+      "id": "common_sensor_list",
+      "topic": "Sensors",
+      "keywords": ["sensor", "module", "common", "popular", "list"],
+      "content": "Common sensors compatible with STM32F103C8T6: I2C: MPU6050 (IMU), BMP280/BME280 (pressure/humidity), SSD1306 (OLED display), DS3231 (RTC), PCF8574 (GPIO expander). SPI: MAX31855 (thermocouple), MCP3008 (ADC), SD card, ILI9341 (TFT display), NRF24L01 (radio). UART: GPS modules, ESP8266, Bluetooth HC-05/06. Analog: photoresistors, thermistors, potentiometers. Digital: DHT11/22 (temperature/humidity), HC-SR04 (ultrasonic)."
+    }
+  ]
+}

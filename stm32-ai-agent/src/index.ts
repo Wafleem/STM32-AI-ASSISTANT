@@ -25,6 +25,17 @@ interface KnowledgeRow {
   content: string;
 }
 
+interface DevicePatternRow {
+  id: string;
+  device_name: string;
+  device_type: string;
+  interface_type: string;
+  default_pins: string;
+  requirements: string;
+  notes: string;
+  keywords: string;
+}
+
 interface SessionRow {
   session_id: string;
   created_at: number;
@@ -161,36 +172,74 @@ app.post('/api/chat', async (c) => {
   const currentAllocations: PinAllocation = JSON.parse(session.pin_allocations);
   const conversationHistory: ConversationMessage[] = JSON.parse(session.conversation_history || '[]');
   
-  // Detect if user is asking about a sensor/module
-  const sensorKeywords = ['sensor', 'module', 'connect', 'wire', 'hook up', 'interface', 'use with'];
-  const isSensorQuestion = sensorKeywords.some(kw => message.toLowerCase().includes(kw)) ||
-    /[A-Z]{2,}[-]?\d{2,}/.test(message); // Matches patterns like MPU6050, BME280, HC-SR04
+  // Detect if user is asking about connecting a sensor/module (not just asking about pins)
+  const informationalKeywords = ['which pins', 'what pins', 'are', 'tolerant', 'can i', 'list', 'available'];
+  const connectionKeywords = ['connect', 'wire', 'hook up', 'attach', 'interface with'];
+  const sensorPattern = /[A-Z]{2,}[-]?\d{2,}/; // Matches MPU6050, BME280, etc.
+
+  const isInformational = informationalKeywords.some(kw => message.toLowerCase().includes(kw));
+  const hasConnectionIntent = connectionKeywords.some(kw => message.toLowerCase().includes(kw));
+  const hasSensorName = sensorPattern.test(message);
+
+  // Only trigger sensor instructions if asking to connect something, not just asking about pins
+  const isSensorQuestion = !isInformational && (hasConnectionIntent || hasSensorName);
   
-  // Search for relevant pins (broader search)
+  // Search for relevant pins, knowledge, and device patterns (broader search)
   const words = message.split(/\s+/).filter((w: string) => w.length > 2);
   let pinResults = { results: [] as PinRow[] };
   let knowledgeResults = { results: [] as KnowledgeRow[] };
-  
+  let devicePatternResults = { results: [] as DevicePatternRow[] };
+
   for (const word of words.slice(0, 5)) {
     const pins = await c.env.DB.prepare(
       "SELECT * FROM pins WHERE functions LIKE ? OR pin LIKE ? OR notes LIKE ? LIMIT 3"
     ).bind(`%${word}%`, `%${word}%`, `%${word}%`).all<PinRow>();
-    
+
     const knowledge = await c.env.DB.prepare(
       "SELECT * FROM knowledge WHERE keywords LIKE ? OR content LIKE ? OR topic LIKE ? LIMIT 2"
     ).bind(`%${word}%`, `%${word}%`, `%${word}%`).all<KnowledgeRow>();
-    
+
+    const devices = await c.env.DB.prepare(
+      "SELECT * FROM device_patterns WHERE keywords LIKE ? OR device_name LIKE ? LIMIT 2"
+    ).bind(`%${word}%`, `%${word}%`).all<DevicePatternRow>();
+
     if (pins.results) pinResults.results.push(...pins.results);
     if (knowledge.results) knowledgeResults.results.push(...knowledge.results);
+    if (devices.results) devicePatternResults.results.push(...devices.results);
   }
-  
+
   // Remove duplicates
   pinResults.results = [...new Map(pinResults.results.map(p => [p.pin, p])).values()].slice(0, 8);
   knowledgeResults.results = [...new Map(knowledgeResults.results.map(k => [k.id, k])).values()].slice(0, 5);
+  devicePatternResults.results = [...new Map(devicePatternResults.results.map(d => [d.id, d])).values()].slice(0, 3);
   
   // Build system prompt with context and session state
   let systemPrompt = `You are an expert assistant for the STM32F103C8T6 microcontroller (Blue Pill board).
 You have deep knowledge of this chip's pinout, peripherals, clock configuration, and common use cases.
+
+CRITICAL PIN ALLOCATION RULE:
+When providing specific pin connections for ACTUAL DEVICE CONNECTIONS, include a structured allocation block at the end.
+
+Use the allocation block ONLY when:
+✓ User says "Connect an MPU6050" or "How do I wire up an LED"
+✓ After confirming their specific hardware choice
+✓ When suggesting complete pin connections for a device they're actually connecting
+
+Do NOT use allocation block for:
+✗ Informational questions: "What pins can I use for I2C?" "Which pins are 5V tolerant?"
+✗ General capability questions: "Does this chip have UART?" "How many ADC channels?"
+✗ Theoretical discussions without specific device connections
+
+Format for actual connections:
+---PIN_ALLOCATIONS---
+PIN: <pin> | FUNCTION: <function> | DEVICE: <device> | NOTES: <notes>
+---END_ALLOCATIONS---
+
+Example for connecting MPU6050:
+---PIN_ALLOCATIONS---
+PIN: PB6 | FUNCTION: SCL | DEVICE: MPU6050 | NOTES: 4.7k pull-up needed
+PIN: PB7 | FUNCTION: SDA | DEVICE: MPU6050 | NOTES: 4.7k pull-up needed
+---END_ALLOCATIONS---
 
 IMPORTANT GUIDELINES:
 - Give accurate, helpful answers about the STM32F103C8T6
@@ -273,14 +322,18 @@ CRITICAL - Two-Step Process for Hardware Confirmation:
 STEP 1 - First Time User Asks About a Sensor:
 - ASK which specific hardware/breakout board they have
 - DO NOT give board-specific advice yet
-- DO NOT mention specific breakout board features (like "GY-521 has a built-in regulator")
+- DO NOT mention specific breakout board features
 - Give ONLY generic information about the sensor chip itself
+- DO NOT OUTPUT THE PIN_ALLOCATIONS BLOCK YET
 - Example: "Are you using a GY-521 breakout board, bare MPU6050 chip, or a different module?"
 
 STEP 2 - After User Confirms Their Hardware:
-- ONLY NOW provide specific connection instructions
+In their NEXT message, the user will confirm (e.g., "yes", "GY-521", "the GY-521 one", "yeah that one")
+When you see this confirmation:
+- NOW provide specific connection instructions
 - Use the exact hardware they confirmed
-- If they didn't confirm, ask again - don't assume
+- INCLUDE THE PIN_ALLOCATIONS BLOCK at the end
+- This is critical - you MUST include allocations when giving connection instructions
 
 Then provide:
 1. Identify what interface the sensor uses (I2C, SPI, UART, Analog, or Digital)
@@ -288,32 +341,53 @@ Then provide:
 3. Mention voltage compatibility (3.3V vs 5V)
 4. Note any pull-up resistors needed
 5. Give the typical I2C address if applicable
+6. Include the ---PIN_ALLOCATIONS--- block
 
-CRITICAL: At the END of your response, include a pin allocation summary in this EXACT format:
+FULL CONVERSATION EXAMPLE:
+User: "How do I connect an MPU6050?"
+AI: "The MPU6050 is an I2C gyroscope/accelerometer. Are you using a GY-521 breakout board or a different module?"
+[NO ALLOCATIONS YET]
+
+User: "Yes, GY-521"
+AI: "Great! For the GY-521 breakout board:
+- Connect VCC to 3.3V
+- Connect GND to GND
+- Connect SCL to PB6
+- Connect SDA to PB7
+- Add 4.7k pull-up resistors on SCL and SDA lines
+
 ---PIN_ALLOCATIONS---
-PIN: <pin> | FUNCTION: <function> | DEVICE: <device> | NOTES: <notes>
-PIN: <pin> | FUNCTION: <function> | DEVICE: <device> | NOTES: <notes>
----END_ALLOCATIONS---
-
-Example:
 PIN: PB6 | FUNCTION: SCL | DEVICE: MPU6050 | NOTES: 4.7k pull-up needed
 PIN: PB7 | FUNCTION: SDA | DEVICE: MPU6050 | NOTES: 4.7k pull-up needed
-PIN: PA1 | FUNCTION: GPIO | DEVICE: LED | NOTES: 220-330 ohm resistor
+---END_ALLOCATIONS---"
 
-Only include pins that are being actively used for connections.
-Use the device name the USER mentioned, not technical variants.
-Only output the PIN_ALLOCATIONS block after the user has confirmed their hardware setup.
+IMPORTANT RULES:
+- Only allocate pins that are being actively used for connections
+- Use the device name the USER mentioned, not technical variants
+- ALWAYS include PIN_ALLOCATIONS block when giving connection instructions
+- Include allocations ONLY AFTER user confirms their hardware
 `;
   }
 
   // Add database results as additional context
+  if (devicePatternResults.results && devicePatternResults.results.length > 0) {
+    systemPrompt += "\nKNOWN DEVICE CONNECTION PATTERNS (Use these as reference):\n";
+    for (const device of devicePatternResults.results) {
+      const pins = JSON.parse(device.default_pins);
+      systemPrompt += `\n${device.device_name} (${device.interface_type}):\n`;
+      systemPrompt += `  Default pins: ${Object.entries(pins).map(([func, pin]) => `${func}=${pin}`).join(', ')}\n`;
+      if (device.requirements) systemPrompt += `  Requirements: ${device.requirements}\n`;
+      if (device.notes) systemPrompt += `  Notes: ${device.notes}\n`;
+    }
+  }
+
   if (pinResults.results && pinResults.results.length > 0) {
     systemPrompt += "\nRELEVANT PIN DATA FROM DATABASE:\n";
     for (const pin of pinResults.results) {
       systemPrompt += `- ${pin.pin} (LQFP48 pin ${pin.lqfp48}): ${pin.notes}\n`;
     }
   }
-  
+
   if (knowledgeResults.results && knowledgeResults.results.length > 0) {
     systemPrompt += "\nRELEVANT KNOWLEDGE FROM DATABASE:\n";
     for (const k of knowledgeResults.results) {
@@ -321,7 +395,11 @@ Only output the PIN_ALLOCATIONS block after the user has confirmed their hardwar
     }
   }
 
-  systemPrompt += "\nAnswer the user's question:";
+  systemPrompt += `
+
+REMINDER: Only include the ---PIN_ALLOCATIONS--- block when the user is actually connecting a device, not for informational questions.
+
+Answer the user's question:`;
 
   // Build messages array with conversation history
   const messages: any[] = [
@@ -337,22 +415,117 @@ Only output the PIN_ALLOCATIONS block after the user has confirmed their hardwar
   // Add current user message
   messages.push({ role: 'user', content: message });
 
-  // Call Workers AI
-  const response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct' as any, {
-    messages,
-    max_tokens: 800
-  }) as { response: string };
+  // Define tool for structured pin allocation
+  const tools = [
+    {
+      name: "allocate_pins",
+      description: "Allocate one or more pins for device connections on the STM32F103C8T6. Use this function when providing specific pin connections for devices, sensors, or modules. This ensures accurate tracking of pin usage.",
+      parameters: {
+        type: "object",
+        properties: {
+          allocations: {
+            type: "array",
+            description: "List of pin allocations to make",
+            items: {
+              type: "object",
+              properties: {
+                pin: {
+                  type: "string",
+                  description: "The pin name (e.g., PB6, PA9, PA0)"
+                },
+                function: {
+                  type: "string",
+                  description: "The function of this pin (e.g., SCL, SDA, TX, RX, GPIO, ADC)"
+                },
+                device: {
+                  type: "string",
+                  description: "The device this pin connects to (e.g., MPU6050, XBee, LED)"
+                },
+                notes: {
+                  type: "string",
+                  description: "Additional requirements or notes (e.g., '4.7k pull-up needed', '220 ohm resistor')"
+                }
+              },
+              required: ["pin", "function", "device"]
+            }
+          }
+        },
+        required: ["allocations"]
+      }
+    }
+  ];
 
-  // Extract pin allocations from response - try structured format first
-  const extractPinAllocations = (text: string, userMsg: string): PinAllocation => {
+  // Call Workers AI without tool support for now (model struggles with when to use tools)
+  // Use structured text blocks instead as fallback
+  const aiResult = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct' as any, {
+    messages,
+    // tools, // Disabled - model calls tools too eagerly for informational questions
+    max_tokens: 800
+  }) as any;
+
+  // Extract response text from various possible formats
+  let responseText = aiResult?.response || aiResult?.content || aiResult?.message?.content || '';
+
+  // If response is null but we have tool calls, provide a default message
+  // (This shouldn't happen with proper prompting, but handle it gracefully)
+  if (!responseText && aiResult?.tool_calls && aiResult.tool_calls.length > 0) {
+    responseText = "I've allocated the pins for your device. Check the pin allocation sidebar for details.";
+  }
+
+  // Build normalized response object
+  const response = {
+    response: responseText,
+    tool_calls: aiResult?.tool_calls || []
+  };
+
+  // Extract pin allocations from tool calls or text response
+  const extractPinAllocations = (aiResponse: any, userMsg: string): PinAllocation => {
     const allocations: PinAllocation = {};
 
-    // Try to extract structured allocation block first
+    // PRIORITY 1: Check for tool calls (most reliable)
+    if (aiResponse.tool_calls && Array.isArray(aiResponse.tool_calls)) {
+      for (const toolCall of aiResponse.tool_calls) {
+        if (toolCall.name === 'allocate_pins') {
+          try {
+            const args = typeof toolCall.arguments === 'string'
+              ? JSON.parse(toolCall.arguments)
+              : toolCall.arguments;
+
+            // Handle case where allocations might be a JSON string
+            let allocationsList = args.allocations;
+            if (typeof allocationsList === 'string') {
+              allocationsList = JSON.parse(allocationsList);
+            }
+
+            if (allocationsList && Array.isArray(allocationsList)) {
+              for (const allocation of allocationsList) {
+                const pin = allocation.pin.toUpperCase();
+                allocations[pin] = {
+                  function: allocation.function,
+                  device: allocation.device,
+                  notes: allocation.notes
+                };
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse tool call arguments:', e);
+          }
+        }
+      }
+
+      // If we got allocations from tool calls, return them
+      if (Object.keys(allocations).length > 0) {
+        return allocations;
+      }
+    }
+
+    // PRIORITY 2: Try to extract structured allocation block from text
+    const text = aiResponse.response || '';
     const structuredMatch = text.match(/---PIN_ALLOCATIONS---\n([\s\S]*?)\n---END_ALLOCATIONS---/);
 
     if (structuredMatch) {
       const allocationBlock = structuredMatch[1];
-      const lines = allocationBlock.split('\n').filter(line => line.trim());
+      const lines = allocationBlock.split('\n').filter((line: string) => line.trim());
 
       for (const line of lines) {
         // Parse: PIN: PB6 | FUNCTION: SCL | DEVICE: MPU6050 | NOTES: 4.7k pull-up
@@ -374,46 +547,45 @@ Only output the PIN_ALLOCATIONS block after the user has confirmed their hardwar
       return allocations;
     }
 
-    // Fallback: Extract from prose if structured format not found
-    // Extract devices from user message
-    const userDevicePattern = /\b([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|Button|Switch|Motor|Relay|sensor|module)\b/gi;
-    const userDevices = [...new Set((userMsg.match(userDevicePattern) || []).map(d => d.toUpperCase()))];
+    // Fallback: Only allocate if we have strong evidence of device connection
+    // For informational questions, don't allocate anything
 
-    // Find all pin mentions in response
-    const pinPattern = /\b(P[A-C]\d{1,2})\b/g;
-    const pins = [...new Set(text.match(pinPattern) || [])];
+    // Check if this is likely an informational question (not a connection request)
+    const informationalPatterns = [
+      /which pins|what pins|list.*pins/i,
+      /can i use|could i use/i,
+      /are.*5v tolerant|5v.*tolerant/i,
+      /available|options/i
+    ];
 
-    for (const pin of pins) {
-      if (allocations[pin]) continue; // Skip if already processed
+    const isInformational = informationalPatterns.some(pattern => userMsg.match(pattern));
 
-      // Get context around the pin
-      const pinIndex = text.indexOf(pin);
-      const contextBefore = text.substring(Math.max(0, pinIndex - 100), pinIndex);
-      const contextAfter = text.substring(pinIndex, Math.min(text.length, pinIndex + 150));
-      const fullContext = contextBefore + contextAfter;
+    if (isInformational) {
+      // Don't allocate pins for informational questions
+      return allocations;
+    }
 
-      // Skip if mentioned negatively (avoid, disable, etc.)
-      if (/avoid|disable|not use|don't use|instead|alternatively/i.test(fullContext)) {
-        continue;
-      }
+    // Only proceed if there's a clear device in the user message
+    const devicePattern = /\b([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|Button|Switch|Motor|Relay)\b/gi;
+    const devices = userMsg.match(devicePattern);
 
-      // Look for positive connection context
-      const hasConnectionContext = /connect|wire|use|attach|→|->|to|for/i.test(fullContext);
+    if (!devices || devices.length === 0) {
+      // No device mentioned = informational question
+      return allocations;
+    }
 
-      if (hasConnectionContext) {
-        // Extract function from context
-        const functionMatch = fullContext.match(/\b(SDA|SCL|TX|RX|MOSI|MISO|SCK|CS|NSS|GPIO|PWM|ADC|USART|UART|I2C|SPI)\b/i);
+    // Very conservative: only allocate if we see explicit connection language + device + pin
+    const connectionPattern = /connect\s+(?:the\s+)?([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|sensor|module)\s+(?:to\s+)?([A-Z]{2}\d{1,2})/gi;
+    const matches = text.matchAll(connectionPattern);
 
-        // Try to find device name near this pin
-        let deviceName = userDevices[0] || '';
-        const deviceMatch = fullContext.match(/\b([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|sensor|module)\b/i);
-        if (deviceMatch) {
-          deviceName = deviceMatch[0];
-        }
+    for (const match of matches) {
+      const device = match[1];
+      const pin = match[2].toUpperCase();
 
+      if (!allocations[pin]) {
         allocations[pin] = {
-          function: functionMatch ? functionMatch[0].toUpperCase() : 'GPIO',
-          device: deviceName || undefined,
+          function: 'GPIO',
+          device: device,
           notes: undefined
         };
       }
@@ -422,8 +594,8 @@ Only output the PIN_ALLOCATIONS block after the user has confirmed their hardwar
     return allocations;
   };
 
-  // Get new allocations from response
-  const newAllocations = extractPinAllocations(response.response, message);
+  // Get new allocations from response (checks tool calls and text)
+  const newAllocations = extractPinAllocations(response, message);
   const updatedAllocations = { ...currentAllocations };
 
   // Check if this is a reassignment (same device, different pins)
@@ -467,7 +639,9 @@ Only output the PIN_ALLOCATIONS block after the user has confirmed their hardwar
   ).run();
 
   // Remove structured allocation block from user-visible response
-  const cleanResponse = response.response.replace(/---PIN_ALLOCATIONS---[\s\S]*?---END_ALLOCATIONS---/g, '').trim();
+  const cleanResponse = (response.response || '')
+    .replace(/---PIN_ALLOCATIONS---[\s\S]*?---END_ALLOCATIONS---/g, '')
+    .trim();
 
   return c.json({
     response: cleanResponse,

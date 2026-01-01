@@ -122,6 +122,14 @@ function App() {
     }
   }
 
+  const sendExampleQuestion = (question: string) => {
+    setInput(question)
+    // Use setTimeout to ensure state is updated before sending
+    setTimeout(() => {
+      sendMessage()
+    }, 10)
+  }
+
   return (
     <div className="app">
       <header>
@@ -174,10 +182,18 @@ function App() {
           <div className="welcome">
             <p>Try asking:</p>
             <ul>
-              <li>"What pins can I use for I2C?"</li>
-              <li>"How do I configure the clock to 72MHz?"</li>
-              <li>"Which pins are 5V tolerant?"</li>
-              <li>"How do I connect an MPU6050?"</li>
+              <li onClick={() => sendExampleQuestion("What pins can I use for I2C?")}>
+                "What pins can I use for I2C?"
+              </li>
+              <li onClick={() => sendExampleQuestion("How do I configure the clock to 72MHz?")}>
+                "How do I configure the clock to 72MHz?"
+              </li>
+              <li onClick={() => sendExampleQuestion("Which pins are 5V tolerant?")}>
+                "Which pins are 5V tolerant?"
+              </li>
+              <li onClick={() => sendExampleQuestion("How do I connect an MPU6050?")}>
+                "How do I connect an MPU6050?"
+              </li>
             </ul>
           </div>
         )}

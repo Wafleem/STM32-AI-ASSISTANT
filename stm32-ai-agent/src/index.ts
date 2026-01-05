@@ -844,11 +844,21 @@ Answer the user's question:`;
   }
 
   // Additional safety: If response seems to be following injection attempt
-  if (cleanResponse.length > 0 && !cleanResponse.toLowerCase().includes('stm32') &&
+  // Allow responses that mention hardware/protocol terms even if they don't mention STM32/pin directly
+  const hardwareTerms = ['i2c', 'spi', 'uart', 'gpio', 'sensor', 'module', 'breakout', 'board',
+                          'connect', 'wire', 'interface', 'peripheral', 'device', 'vcc', 'gnd',
+                          'scl', 'sda', 'mosi', 'miso', 'tx', 'rx', 'adc', 'pwm', 'timer'];
+  const responseContainsHardwareTerm = hardwareTerms.some(term =>
+    cleanResponse.toLowerCase().includes(term)
+  );
+
+  if (cleanResponse.length > 0 &&
+      !cleanResponse.toLowerCase().includes('stm32') &&
       !cleanResponse.toLowerCase().includes('pin') &&
       !cleanResponse.toLowerCase().includes('designed to help') &&
+      !responseContainsHardwareTerm &&
       cleanResponse.length > 100) {
-    // Response is long but doesn't mention STM32 or pins - suspicious
+    // Response is long but doesn't mention STM32, pins, or any hardware terms - suspicious
     console.log('Suspicious off-topic response detected');
     cleanResponse = "I'm specifically designed to help with the STM32F103C8T6 microcontroller. Please ask me questions about the chip, its pinout, or how to connect devices to it.";
   }

@@ -112,7 +112,7 @@ npm run test:backend
 - Cloudflare Workers
 - Vitest (Testing)
 - TypeScript
-- SQL (Database with datasheet and reference manual info)
+- SQL based D1 Database (Database with datasheet and reference manual info)
 
 ## License
 

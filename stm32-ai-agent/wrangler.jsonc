@@ -15,5 +15,11 @@
       "database_name": "stm32-pins-db",
       "database_id": "ff096d0b-a906-4496-ac2f-f6a20ac66be2"
     }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "stm32-knowledge"
+    }
   ]
 }

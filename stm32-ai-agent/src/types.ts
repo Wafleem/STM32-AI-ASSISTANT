@@ -1,6 +1,7 @@
 export type Bindings = {
   DB: D1Database;
   AI: Ai;
+  VECTORIZE: VectorizeIndex;
 };
 
 export interface PinRow {

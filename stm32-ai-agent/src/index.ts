@@ -4,6 +4,7 @@ import { Bindings, PinAllocation, ConversationMessage } from './types';
 import { getOrCreateSession, cleanupOldSessions, parseJSON } from './sessions';
 import { performSearch } from './search';
 import { buildSystemPrompt, detectSensorQuestion } from './prompts';
+import { handleSeedVectors } from './seed-vectors';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -16,6 +17,9 @@ app.use('/*', async (c, next) => {
     cleanupOldSessions(c.env.DB).catch(err => console.error('Cleanup error:', err));
   }
 });
+
+// Seed vectors endpoint (one-time, call after deploy to populate Vectorize)
+app.post('/api/admin/seed-vectors', handleSeedVectors);
 
 // Get all pins
 app.get('/api/pins', async (c) => {
@@ -115,8 +119,8 @@ app.post('/api/chat', async (c) => {
 
   const isSensorQuestion = detectSensorQuestion(message);
 
-  // Search for relevant pins, knowledge, and device patterns
-  const searchResults = await performSearch(c.env.DB, message);
+  // Search for relevant pins, knowledge, and device patterns (vector search with LIKE fallback)
+  const searchResults = await performSearch(c.env, message);
 
   // Build system prompt with context and session state
   const systemPrompt = buildSystemPrompt(

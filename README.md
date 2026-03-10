@@ -6,15 +6,28 @@ Full-stack application for STM32 AI assistance with a React frontend and Cloudfl
 
 ```
 stm32-ai-agent/
-├── frontend/              # React + Vite frontend application
+├── frontend/                  # React + Vite frontend application
 │   ├── src/
+│   │   ├── App.tsx            # Main chat UI component
+│   │   ├── App.css            # Styling (dark theme)
+│   │   └── main.tsx           # Entry point
 │   ├── public/
 │   └── package.json
-├── stm32-ai-agent/       # Cloudflare Workers backend (Hono)
+├── stm32-ai-agent/            # Cloudflare Workers backend (Hono)
 │   ├── src/
+│   │   ├── index.ts           # Routes + wiring
+│   │   ├── types.ts           # Shared TypeScript interfaces
+│   │   ├── sessions.ts        # Session creation, cleanup, JSON helpers
+│   │   ├── search.ts          # RAG search (LIKE queries across 3 tables)
+│   │   └── prompts.ts         # System prompt builder, sensor detection
+│   ├── migrations/            # D1 database migrations
+│   │   ├── 0001_create_sessions.sql
+│   │   ├── 0002_add_conversation_history.sql
+│   │   └── 0003_create_device_patterns.sql
 │   ├── test/
+│   ├── wrangler.jsonc         # Worker configuration (D1, AI bindings)
 │   └── package.json
-├── package.json          # Root package.json with workspace scripts
+├── package.json               # Root package.json with workspace scripts
 └── README.md
 ```
 

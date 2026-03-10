@@ -358,10 +358,9 @@ npx wrangler d1 export stm32-pins-db --output=backup.sql
 
 ## Configuration
 
-### Session Settings (src/index.ts)
+### Session Settings (src/sessions.ts)
 ```typescript
-const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour
-const CLEANUP_THRESHOLD = 24 * 60 * 60; // 24 hours
+const CLEANUP_THRESHOLD = 24 * 60 * 60 * 1000; // 24 hours
 ```
 
 ### Message Limits
@@ -378,23 +377,37 @@ const CLEANUP_THRESHOLD = 24 * 60 * 60; // 24 hours
 
 ```
 stm32-ai-agent/
-├── stm32-ai-agent/          # Backend (Cloudflare Worker)
+├── stm32-ai-agent/              # Backend (Cloudflare Worker)
 │   ├── src/
-│   │   └── index.ts         # Main worker code
-│   ├── migrations/          # Database migrations
+│   │   ├── index.ts             # Routes + wiring (entry point)
+│   │   ├── types.ts             # Shared TypeScript interfaces (Bindings, PinRow, etc.)
+│   │   ├── sessions.ts          # Session creation, cleanup, parseJSON helper
+│   │   ├── search.ts            # RAG search (LIKE queries across pins/knowledge/devices)
+│   │   └── prompts.ts           # System prompt builder, sensor question detection
+│   ├── migrations/              # D1 database migrations
 │   │   ├── 0001_create_sessions.sql
 │   │   ├── 0002_add_conversation_history.sql
 │   │   └── 0003_create_device_patterns.sql
-│   ├── wrangler.toml        # Worker configuration
+│   ├── wrangler.jsonc           # Worker configuration (D1, AI bindings)
 │   └── package.json
 │
-└── frontend/                # React frontend
+└── frontend/                    # React frontend
     ├── src/
-    │   ├── App.tsx          # Main component
-    │   ├── App.css          # Styling
-    │   └── main.tsx         # Entry point
+    │   ├── App.tsx              # Main chat component
+    │   ├── App.css              # Styling (dark theme)
+    │   └── main.tsx             # Entry point
     └── package.json
 ```
+
+### Backend Module Responsibilities
+
+| Module | What it does |
+|---|---|
+| `index.ts` | Hono app setup, all route handlers, pin allocation extraction, response security filtering |
+| `types.ts` | TypeScript interfaces shared across modules: `Bindings`, `PinRow`, `KnowledgeRow`, `DevicePatternRow`, `SessionRow`, `PinAllocation`, etc. |
+| `sessions.ts` | `getOrCreateSession()` — finds existing or creates new session; `cleanupOldSessions()` — deletes sessions older than 24h; `parseJSON()` — safe JSON parse with fallback |
+| `search.ts` | `performSearch()` — splits user message into words, runs `LIKE '%word%'` queries against `pins`, `knowledge`, and `device_patterns` tables, deduplicates and caps results |
+| `prompts.ts` | `buildSystemPrompt()` — assembles the full system prompt from security rules, chip facts, current allocations, sensor instructions, and RAG results; `detectSensorQuestion()` — determines if the message is a connection request vs informational |
 
 ## Deployment
 

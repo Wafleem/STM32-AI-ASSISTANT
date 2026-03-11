@@ -1,0 +1,1249 @@
+{
+  "exportedAt": "2026-03-11T18:31:54.087Z",
+  "database": "stm32-pins-db",
+  "totals": {
+    "knowledge": 76,
+    "device_patterns": 25,
+    "pins": 48
+  },
+  "knowledge": [
+    {
+      "id": "adc_channels",
+      "topic": "ADC",
+      "keywords": "[\"ADC\",\"channel\",\"pin\",\"input\",\"IN0\",\"IN1\"]",
+      "content": "ADC channels on STM32F103C8T6: IN0=PA0, IN1=PA1, IN2=PA2, IN3=PA3, IN4=PA4, IN5=PA5, IN6=PA6, IN7=PA7, IN8=PB0, IN9=PB1. Internal channels: IN16=Temperature sensor, IN17=VREFINT (internal 1.2V reference). All external ADC pins are NOT 5V tolerant. The ADC input impedance is about 12k╬⌐, so source impedance should be low (under 10k╬⌐) for accurate readings."
+    },
+    {
+      "id": "adc_clock",
+      "topic": "ADC",
+      "keywords": "[\"ADC\",\"clock\",\"prescaler\",\"speed\",\"sample\"]",
+      "content": "ADC clock is derived from APB2 clock (PCLK2) via prescaler. Maximum ADC clock is 14MHz. With 72MHz SYSCLK, use prescaler of 6 to get 12MHz ADC clock. Conversion time = sampling time + 12.5 ADC cycles. Minimum sampling time is 1.5 cycles. Total minimum conversion time at 14MHz = (1.5 + 12.5) / 14MHz = 1┬╡s. For high-impedance sources, increase sampling time up to 239.5 cycles."
+    },
+    {
+      "id": "adc_overview",
+      "topic": "ADC",
+      "keywords": "[\"ADC\",\"analog\",\"digital\",\"convert\",\"resolution\",\"bits\"]",
+      "content": "The STM32F103C8T6 has two 12-bit ADCs (ADC1 and ADC2) with up to 10 external input channels. Resolution is 12 bits (0-4095). Input voltage range is 0V to VREF+ (typically 3.3V). Conversion time is 1┬╡s at 56MHz ADC clock. The ADC can operate in single, continuous, scan, or discontinuous modes. It supports DMA for automatic data transfer. There are also two internal channels: temperature sensor and internal reference voltage."
+    },
+    {
+      "id": "analog_generic_connection",
+      "topic": "ADC",
+      "keywords": "analog sensor adc connect wire any unknown generic potentiometer thermistor ldr voltage",
+      "content": "Generic analog sensor connection guide for STM32F103C8T6: Analog sensors output a variable voltage that the ADC reads. ADC-capable pins: PA0-PA7 (channels 0-7), PB0-PB1 (channels 8-9). IMPORTANT: These pins are NOT 5V tolerant — max input voltage is 3.3V. ADC resolution is 12-bit (0-4095 maps to 0-3.3V). Most analog sensors need a voltage divider or are wired as part of one. Common patterns: thermistor/LDR with fixed resistor forming a divider, potentiometer wiper to ADC pin, analog output sensors directly to ADC. For 5V analog sensors, use a resistor divider to bring the output below 3.3V. Two ADC peripherals (ADC1, ADC2) can run simultaneously for faster sampling."
+    },
+    {
+      "id": "dac_alternatives",
+      "topic": "ADC",
+      "keywords": "dac digital analog output convert voltage signal waveform no dac mcp4725 pwm filter",
+      "content": "DAC alternatives for STM32F103C8T6: This chip does NOT have a built-in DAC (only high-density STM32F103RC/RD/RE and connectivity-line STM32F105/F107 have one). Alternatives: PWM + RC filter: generate PWM on a timer pin, filter with an RC low-pass (e.g., 10k + 100nF for ~160Hz cutoff). Gives a pseudo-analog output good enough for LED dimming, simple audio, or slow control signals. Higher PWM frequency = smoother output. External DAC: MCP4725 (12-bit, I2C, 0x60-0x63) — single channel, easy to use, connect to PB6/PB7. MCP4728 (4-channel, I2C). MCP4922 (12-bit, dual, SPI). For audio: use I2S or SPI DAC like PCM5102 or MAX98357. R-2R resistor ladder: connect 8 GPIO pins through a resistor network for a quick 8-bit DAC (lower quality but no extra chip needed)."
+    },
+    {
+      "id": "boot_modes",
+      "topic": "Boot",
+      "keywords": "[\"boot\",\"BOOT0\",\"BOOT1\",\"bootloader\",\"flash\",\"programming\"]",
+      "content": "Boot mode is selected by BOOT0 pin and BOOT1 (PB2) sampled at reset. BOOT0=0 (any BOOT1): Boot from main Flash at 0x08000000 - normal operation. BOOT0=1, BOOT1=0: Boot from System Memory at 0x1FFFF000 - built-in bootloader for UART/USB programming. BOOT0=1, BOOT1=1: Boot from SRAM at 0x20000000 - for debugging. To enter bootloader: Set BOOT0 high, keep BOOT1 low, reset the chip. The bootloader supports programming via USART1 (PA9/PA10)."
+    },
+    {
+      "id": "can_generic_connection",
+      "topic": "CAN",
+      "keywords": "can bus connect wire transceiver mcp2551 sn65hvd230 tja1050 obd2 automotive vehicle",
+      "content": "CAN bus connection guide for STM32F103C8T6: The CAN controller needs an external transceiver (the chip only has the protocol logic, not the physical layer). Common transceivers: MCP2551 (5V), SN65HVD230 (3.3V, recommended), TJA1050 (5V). Wiring: STM32 PA11 (CAN_RX) to transceiver RXD, PA12 (CAN_TX) to transceiver TXD. Can remap to PB8 (RX) / PB9 (TX). The bus needs 120 ohm termination resistors at each end. CAN uses two differential wires: CANH and CANL. IMPORTANT: CAN shares PA11/PA12 with USB — you cannot use both simultaneously. Supports speeds up to 1Mbit/s. Common baud rates: 125k, 250k, 500k (automotive), 1M."
+    },
+    {
+      "id": "can_overview",
+      "topic": "CAN",
+      "keywords": "[\"CAN\",\"bus\",\"automotive\",\"controller\",\"area\",\"network\"]",
+      "content": "The STM32F103C8T6 has one CAN 2.0B controller supporting 1Mbit/s. CAN default pins: RX=PA11, TX=PA12 (shared with USB). CAN remap: RX=PB8, TX=PB9. CAN requires an external transceiver (like MCP2551 or SN65HVD230) to convert logic levels to CAN bus differential signals. The CAN controller has 3 transmit and 2 receive mailboxes with 14 configurable filter banks."
+    },
+    {
+      "id": "pin_conflicts_summary",
+      "topic": "Conflicts",
+      "keywords": "[\"conflict\",\"share\",\"cannot\",\"both\",\"same time\"]",
+      "content": "Key pin conflicts on STM32F103C8T6: PA11/PA12 shared by USB, CAN, USART1_CTS/RTS, TIM1. PB10/PB11 shared by I2C2 and USART3 - cannot use both. PB6/PB7 shared by I2C1 and TIM4 CH1/CH2. PA13/PA14 are SWD debug pins - using as GPIO disables debugging. PA15/PB3/PB4 are JTAG pins - must disable JTAG to use for SPI1 remap or GPIO. PA5/PA6/PA7 shared between SPI1 and ADC channels."
+    },
+    {
+      "id": "dma_overview",
+      "topic": "DMA",
+      "keywords": "[\"DMA\",\"direct\",\"memory\",\"access\",\"transfer\"]",
+      "content": "The STM32F103C8T6 has a 7-channel DMA controller (DMA1). DMA allows memory-to-memory, peripheral-to-memory, and memory-to-peripheral transfers without CPU intervention. Each channel has configurable priority and supports circular mode for continuous transfers. DMA is useful for high-speed ADC sampling, UART/SPI buffering, and reducing CPU load. Channels are assigned to specific peripherals (e.g., DMA1_CH1 for ADC1)."
+    },
+    {
+      "id": "dma_practical_guide",
+      "topic": "DMA",
+      "keywords": "dma direct memory access adc uart spi transfer fast efficient buffer circular",
+      "content": "DMA practical usage guide for STM32F103C8T6: DMA1 has 7 channels, each dedicated to specific peripherals. Common uses: ADC+DMA: continuously sample ADC channels into a buffer without CPU intervention — essential for multi-channel or high-speed sampling. Set ADC to scan mode + continuous, DMA to circular mode. UART+DMA: transmit large buffers without blocking (DMA1_CH4 for USART1_TX, CH5 for USART1_RX). Receive unknown-length data using IDLE line detection + DMA. SPI+DMA: fast display updates or SD card transfers (DMA1_CH3 for SPI1_TX, CH2 for SPI1_RX). Memory-to-memory: copy large arrays quickly. Channel assignments are fixed in hardware — check reference manual Table 78 for channel-to-peripheral mapping. Priority levels: Very High, High, Medium, Low."
+    },
+    {
+      "id": "debug_programming_guide",
+      "topic": "Development",
+      "keywords": "debug program flash stlink swd jtag serial wire openocd gdb upload bootloader",
+      "content": "Programming and debugging guide for STM32F103C8T6: SWD (Serial Wire Debug) is the primary debug interface — only needs 2 pins: SWDIO (PA13) and SWCLK (PA14), plus GND and optionally 3.3V. Use an ST-Link V2 programmer (cheap clones work fine). Connect: SWDIO to PA13, SWCLK to PA14, GND to GND, 3.3V to 3.3V (optional, powers the board). Flash via STM32CubeProgrammer, OpenOCD, or directly from your IDE. For debugging: use OpenOCD + GDB, or STM32CubeIDE built-in debugger — set breakpoints, inspect variables, step through code. Serial bootloader: built into ROM, activated by BOOT0=1 + reset. Flash via UART1 (PA9/PA10) using stm32flash tool. USB DFU: some bootloaders support USB flashing. IMPORTANT: do not reassign PA13/PA14 as GPIO unless you have another way to reflash (serial bootloader)."
+    },
+    {
+      "id": "development_tools",
+      "topic": "Development",
+      "keywords": "[\"tool\",\"IDE\",\"program\",\"debug\",\"ST-Link\",\"development\"]",
+      "content": "Development tools for STM32: IDEs include STM32CubeIDE (free, official), Keil MDK, IAR EWARM, PlatformIO with VSCode. Programming/debugging via ST-Link (SWD interface), J-Link, or UART bootloader. STM32CubeMX generates initialization code. Libraries: HAL (Hardware Abstraction Layer) for portability, or LL (Low-Level) for performance. CMSIS provides core peripheral access. OpenOCD supports ST-Link for open-source toolchains."
+    },
+    {
+      "id": "project_data_logger",
+      "topic": "Development",
+      "keywords": "data logger logging sd card csv sensor record save timestamp project example",
+      "content": "Data logger project pattern for STM32F103C8T6: Components: sensor(s) on I2C/SPI/ADC + SD card on SPI + optional DS3231 RTC for timestamps. Wiring: sensors on I2C1 (PB6/PB7), SD card on SPI1 (PA5-PA7, CS on PA4), RTC on same I2C bus (if different address). Flow: initialize all peripherals, create/open CSV file on SD, in main loop: read sensor, format as CSV line with timestamp, write to SD, delay or use timer for sampling interval. Use DMA for ADC if sampling multiple analog channels. Flush SD write buffer periodically to prevent data loss on power failure. Power: for battery operation, use sleep mode between samples, wake via RTC alarm or timer. Typical sample rates: 1Hz for environmental, 100Hz+ for motion/vibration (use DMA + timer)."
+    },
+    {
+      "id": "project_motor_control",
+      "topic": "Development",
+      "keywords": "robot motor control pid encoder feedback speed position servo project",
+      "content": "Motor control project pattern for STM32F103C8T6: DC motor with feedback: motor through H-bridge (L298N/DRV8833) connected to timer PWM pin + 2 direction GPIO pins. Encoder on timer in encoder mode (hardware counting). PID loop in timer interrupt (100Hz-1kHz): read encoder count, compute error, adjust PWM duty cycle. Servo robot: up to ~6 servos on timer PWM pins (50Hz, 1-2ms pulse). More servos: use PCA9685 I2C servo driver (0x40, controls 16 servos). Stepper positioning: A4988 driver, STEP pin on timer output for precise frequency control, acceleration ramp in software. Always use separate motor power supply, share GND with STM32. Add decoupling capacitors near motor driver. For wireless control: add HC-05 Bluetooth or NRF24L01."
+    },
+    {
+      "id": "ethernet_overview",
+      "topic": "Ethernet",
+      "keywords": "[\"ethernet\",\"network\",\"MAC\",\"PHY\",\"connectivity\"]",
+      "content": "Note: The STM32F103C8T6 does NOT have Ethernet capability. Ethernet is only available on STM32F107 'connectivity line' devices, not the STM32F103 'performance line'. For network connectivity with STM32F103, use external modules like W5500 (SPI Ethernet), ENC28J60 (SPI Ethernet), or ESP8266/ESP32 (WiFi via UART/SPI). The W5500 is recommended for ease of use as it handles the TCP/IP stack internally."
+    },
+    {
+      "id": "flash_programming",
+      "topic": "Flash",
+      "keywords": "[\"flash\",\"program\",\"write\",\"erase\",\"unlock\"]",
+      "content": "Flash programming: First unlock with key sequence (KEY1=0x45670123, KEY2=0xCDEF89AB). Erase before writing (sets all bits to 1). Page erase takes ~20ms. Programming is 16-bit half-word at a time. Write takes ~20┬╡s per half-word. Lock after programming for protection. Mass erase erases entire Flash. Option bytes control read/write protection and watchdog configuration. Be careful: erasing or corrupting Flash near 0x08000000 can brick the chip."
+    },
+    {
+      "id": "gpio_5v_tolerance",
+      "topic": "GPIO",
+      "keywords": "[\"5V\",\"tolerant\",\"voltage\",\"FT\",\"input\",\"level\"]",
+      "content": "Pins marked 'FT' (Five-volt Tolerant) can accept up to 5.5V input when configured as input or open-drain output. On the STM32F103C8T6: PA8-PA15 are 5V tolerant, PB2-PB4 and PB6-PB15 are 5V tolerant (except PB5), PA0-PA7 are NOT 5V tolerant (they are ADC pins), PB0-PB1 are NOT 5V tolerant (ADC pins), PC13-PC15 are NOT 5V tolerant. Never apply 5V to non-FT pins or when pin is configured as push-pull output."
+    },
+    {
+      "id": "gpio_current",
+      "topic": "GPIO",
+      "keywords": "[\"current\",\"mA\",\"drive\",\"LED\",\"sink\",\"source\"]",
+      "content": "Each GPIO pin can sink or source up to 25mA (absolute maximum), but 8mA is recommended for reliable operation. The total current for all GPIO pins combined must not exceed 150mA. PC13-PC15 are special: they're powered through a switch limited to 3mA total, can only operate at 2MHz speed, and should not be used to drive loads like LEDs. For LED driving on other pins, use a series resistor to limit current."
+    },
+    {
+      "id": "gpio_input_patterns",
+      "topic": "GPIO",
+      "keywords": "gpio input button switch sensor debounce pull-up pull-down digital read",
+      "content": "GPIO input patterns for STM32F103C8T6: Buttons/switches: connect between GPIO pin and GND, enable internal pull-up in software (reads HIGH when open, LOW when pressed). Or use external 10k pull-up/pull-down resistor. Debouncing: software delay (10-50ms after edge detected) or hardware RC filter (10k + 100nF). For interrupt-driven buttons: configure EXTI on the pin, use falling edge trigger with pull-up. Digital sensors (PIR, tilt, vibration, reed switch): same pattern as buttons. Optical encoders: use timer encoder mode for hardware counting. Limit switches: pull-up + active low like buttons. IMPORTANT: for 5V digital signals, use 5V-tolerant pins (PA8-PA15, PB2-PB4, PB6-PB15)."
+    },
+    {
+      "id": "gpio_modes",
+      "topic": "GPIO",
+      "keywords": "[\"GPIO\",\"mode\",\"input\",\"output\",\"push-pull\",\"open-drain\",\"configure\"]",
+      "content": "GPIO pins can be configured in multiple modes: Input (floating, pull-up, pull-down, or analog), Output (push-pull or open-drain), and Alternate Function (push-pull or open-drain). Output speeds are 2MHz, 10MHz, or 50MHz. After reset, all GPIO pins are in Input Floating mode except JTAG pins (PA13/PA14/PA15/PB3/PB4) which default to their debug functions. Each pin has weak internal pull-up (~40K) and pull-down resistors."
+    },
+    {
+      "id": "gpio_output_patterns",
+      "topic": "GPIO",
+      "keywords": "gpio output led relay buzzer solenoid mosfet transistor driver high low",
+      "content": "GPIO output patterns for STM32F103C8T6: LEDs: connect anode to GPIO through 220-330 ohm resistor to GND (active high), or cathode to GPIO with anode to 3.3V (active low). Max 8mA recommended per pin, 25mA absolute max. For loads over 25mA: use an NPN transistor (2N2222) or N-channel MOSFET (2N7000, IRLZ44N) as a switch — GPIO drives the gate/base, load connects to drain/collector with external power. Relays: use a transistor driver + flyback diode (1N4148), or buy a relay module with built-in driver. Buzzers: passive buzzers need PWM (use timer pin), active buzzers just need GPIO HIGH. Solenoids: always use a MOSFET/transistor + flyback diode. Any GPIO pin works for output."
+    },
+    {
+      "id": "jtag_swd_pins",
+      "topic": "GPIO",
+      "keywords": "[\"JTAG\",\"SWD\",\"debug\",\"PA13\",\"PA14\",\"PA15\",\"PB3\",\"PB4\",\"programming\"]",
+      "content": "After reset, PA13/PA14/PA15/PB3/PB4 are configured for JTAG debugging. PA13 is SWDIO, PA14 is SWCLK (these are needed for SWD programming). To use PA15, PB3, PB4 as GPIO or for SPI1 remap, you must disable JTAG via the AFIO_MAPR register (keeping SWD enabled). If you disable both JTAG and SWD by using PA13/PA14 as GPIO, you can only reprogram the chip using BOOT0 pin to enter bootloader mode."
+    },
+    {
+      "id": "onewire_generic_connection",
+      "topic": "GPIO",
+      "keywords": "onewire 1wire digital sensor dht ds18b20 temperature humidity connect wire generic",
+      "content": "Generic one-wire and digital sensor connection guide for STM32F103C8T6: Some sensors use proprietary single-wire protocols (not I2C/SPI/UART). DS18B20 temperature sensor: uses Dallas 1-Wire protocol, needs a 4.7k pull-up resistor on the data line, any GPIO pin works (commonly PA0 or PB0). Multiple DS18B20 can share one data pin. DHT11/DHT22 humidity+temperature: uses custom single-wire protocol, needs a 10k pull-up on data pin, any GPIO works. HC-SR04 ultrasonic: uses TRIG (any GPIO output) and ECHO (any GPIO input, must be 5V tolerant — use PA8-PA15, PB2-PB4, or PB6-PB15, but NOT PB5). WS2812B/NeoPixel LEDs: need a data pin with precise timing, use a timer output pin like PA0 or PA8."
+    },
+    {
+      "id": "pin_remapping_guide",
+      "topic": "GPIO",
+      "keywords": "remap afio alternate function pin reassign move change peripheral different pins",
+      "content": "Pin remapping guide for STM32F103C8T6: Many peripherals can be remapped to alternate pins using the AFIO (Alternate Function I/O) peripheral. You must enable AFIO clock first (RCC_APB2ENR). Remappable peripherals: USART1 (PA9/PA10 -> PB6/PB7), I2C1 (PB6/PB7 -> PB8/PB9), SPI1 (PA4-PA7 -> PA15/PB3-PB5), CAN (PA11/PA12 -> PB8/PB9), TIM1-TIM4 (various remaps). IMPORTANT: USART1 remap to PB6/PB7 conflicts with I2C1 default pins. I2C1 remap to PB8/PB9 frees PB6/PB7 for USART1. JTAG pins (PA13/PA14/PA15/PB3/PB4) can be partially or fully released for GPIO use via AFIO_MAPR register — partial release frees PA15/PB3/PB4, full release also frees PA13/PA14 (loses JTAG, keeps SWD on PA13/PA14 with partial)."
+    },
+    {
+      "id": "voltage_compatibility",
+      "topic": "GPIO",
+      "keywords": "voltage level shifting 5v 3.3v tolerant compatible logic converter",
+      "content": "Voltage compatibility guide for STM32F103C8T6: The chip runs at 3.3V logic. 5V tolerant pins (can safely receive 5V input): PA8-PA15, PB2-PB4, PB6-PB15. NOT 5V tolerant (damage risk above 3.3V): PA0-PA7, PB0-PB1, PB5, PC13-PC15. For 5V devices on non-tolerant pins: use a voltage divider (e.g., 1k + 2k resistors) or a bidirectional level shifter module. For I2C with 5V devices: pull-ups to 3.3V work since I2C is open-drain. For SPI/UART with 5V devices: level shifter recommended on MISO/RX lines. Most 5V devices accept 3.3V as logic HIGH, so STM32 output pins usually work without level shifting."
+    },
+    {
+      "id": "i2c_generic_connection",
+      "topic": "I2C",
+      "keywords": "i2c connect wire sensor module any unknown generic how to hookup setup",
+      "content": "Generic I2C device connection guide for STM32F103C8T6: Any I2C device needs just 4 wires: VCC (check if 3.3V or 5V), GND, SDA (data), SCL (clock). Use I2C1 by default: PB6 (SCL) and PB7 (SDA). Can remap to PB8/PB9. I2C2 is PB10 (SCL) and PB11 (SDA) but conflicts with USART3. Pull-up resistors (4.7k typical) are required on SDA and SCL unless the breakout board includes them. Most Chinese breakout modules include pull-ups. Multiple I2C devices can share the same bus if they have different addresses. Common I2C addresses: 0x68 (MPU6050, DS3231), 0x76/0x77 (BMP280/BME280), 0x3C/0x3D (OLED SSD1306), 0x48-0x4F (ADS1115), 0x20-0x27 (PCF8574). Scan for devices using an I2C scanner sketch."
+    },
+    {
+      "id": "i2c_overview",
+      "topic": "I2C",
+      "keywords": "[\"I2C\",\"interface\",\"bus\",\"two-wire\",\"serial\"]",
+      "content": "The STM32F103C8T6 has two I2C interfaces (I2C1 and I2C2) supporting Standard mode (100kHz) and Fast mode (400kHz). Features include 7-bit and 10-bit addressing, multi-master capability, DMA support, and SMBus/PMBus compatibility. I2C is a two-wire interface using SDA (data) and SCL (clock) lines, both requiring external pull-up resistors."
+    },
+    {
+      "id": "i2c_pins",
+      "topic": "I2C",
+      "keywords": "[\"I2C\",\"pin\",\"SDA\",\"SCL\",\"PB6\",\"PB7\",\"PB10\",\"PB11\",\"remap\"]",
+      "content": "I2C1 default pins: SCL=PB6, SDA=PB7. I2C1 can be remapped to: SCL=PB8, SDA=PB9. I2C2 pins (no remap available): SCL=PB10, SDA=PB11. Note that I2C2 pins conflict with USART3 (PB10=USART3_TX, PB11=USART3_RX) - you cannot use both I2C2 and USART3 simultaneously. I2C1 default pins also share with TIM4 CH1/CH2."
+    },
+    {
+      "id": "i2c_pullups",
+      "topic": "I2C",
+      "keywords": "[\"I2C\",\"pull-up\",\"resistor\",\"external\",\"value\",\"4.7K\"]",
+      "content": "I2C requires external pull-up resistors on SDA and SCL lines. The internal pull-ups (~40k╬⌐) are too weak for reliable I2C communication. Recommended values: 4.7k╬⌐ for 100kHz Standard mode, 2.2k╬⌐-3.3k╬⌐ for 400kHz Fast mode. Lower resistance allows faster rise times but increases power consumption. Pull-ups connect between the I2C line and VDD (3.3V). Many sensor breakout boards include pull-ups - check before adding your own to avoid too-low resistance."
+    },
+    {
+      "id": "exti",
+      "topic": "Interrupts",
+      "keywords": "[\"EXTI\",\"external\",\"interrupt\",\"GPIO\",\"edge\",\"trigger\"]",
+      "content": "External interrupts (EXTI) can be triggered by any GPIO pin. Each EXTI line (0-15) can be connected to the corresponding pin number of any port (e.g., EXTI0 can be PA0, PB0, or PC0, but not multiple simultaneously). Trigger on rising edge, falling edge, or both. EXTI lines 0-4 have dedicated IRQ handlers; 5-9 share one handler; 10-15 share another. Configure via AFIO_EXTICR registers and EXTI registers."
+    },
+    {
+      "id": "interrupts_nvic",
+      "topic": "Interrupts",
+      "keywords": "[\"interrupt\",\"NVIC\",\"priority\",\"IRQ\",\"handler\"]",
+      "content": "The Cortex-M3 NVIC supports 43 maskable interrupt channels with 16 priority levels (4 bits). Priority grouping allows splitting into preemption and sub-priority. Lower number = higher priority. Common interrupts: EXTI0-4 (individual GPIO), EXTI9_5 and EXTI15_10 (grouped GPIO), TIM1-4, USART1-3, SPI1-2, I2C1-2, ADC1-2, DMA1 channels. Use __enable_irq() and __disable_irq() for global interrupt control."
+    },
+    {
+      "id": "interrupts_practical",
+      "topic": "Interrupts",
+      "keywords": "interrupt exti handler callback isr priority nested button timer uart dma",
+      "content": "Practical interrupt guide for STM32F103C8T6: External interrupts (EXTI): any GPIO can trigger an interrupt on rising/falling/both edges. EXTI lines 0-4 have individual handlers, 5-9 share one handler, 10-15 share another. Use for buttons, sensor alerts, data-ready signals. Timer interrupts: update interrupt fires on overflow/underflow — use for periodic tasks (sensor polling, LED blinking, control loops). UART RX interrupt: fires on each received byte — use for receiving serial data without polling. DMA transfer complete interrupt: fires when DMA finishes a block transfer. Priorities: 0 (highest) to 15 (lowest), 4 bits configurable. Nested interrupts: higher priority can preempt lower priority handlers. Keep ISRs short — set a flag and process in main loop. Volatile keyword required for variables shared between ISR and main code."
+    },
+    {
+      "id": "external_power_guide",
+      "topic": "Power",
+      "keywords": "power supply battery voltage regulator current draw motor servo multiple devices external",
+      "content": "Power guide for STM32F103C8T6 projects: The Blue Pill board has a 3.3V regulator (usually AMS1117, max ~800mA). The STM32 itself draws ~50mA. Budget: ~300mA from the 3.3V pin for sensors. For higher power needs: servos and motors MUST use external 5V/6V supply with common GND to STM32. NRF24L01 needs clean 3.3V — add a 10uF capacitor or dedicated regulator. ESP8266 draws up to 300mA peaks — use a separate 3.3V regulator. WS2812B LEDs draw ~60mA each at full white — always use external 5V supply. Multiple I2C/SPI sensors typically draw <50mA total. USB provides 5V/500mA to the board. When using battery power, connect to the 5V pin (goes through the regulator) or directly to 3.3V pin if using a 3.3V regulated source."
+    },
+    {
+      "id": "low_power",
+      "topic": "Power",
+      "keywords": "[\"sleep\",\"stop\",\"standby\",\"low power\",\"wake\"]",
+      "content": "Three low-power modes: Sleep mode stops CPU but peripherals run (~14mA at 72MHz, HSI on). Stop mode stops all clocks but retains SRAM (~20┬╡A, all clocks off). Standby mode is lowest power (~2┬╡A) but loses SRAM content. Wake-up from Sleep: any interrupt. Wake-up from Stop: EXTI line, RTC alarm. Wake-up from Standby: WKUP pin (PA0), RTC alarm, NRST, IWDG. After Stop/Standby, HSI is selected as clock source."
+    },
+    {
+      "id": "power_supply",
+      "topic": "Power",
+      "keywords": "[\"power\",\"voltage\",\"VDD\",\"VDDA\",\"supply\",\"3.3V\"]",
+      "content": "Operating voltage range: VDD = 2.0V to 3.6V, typical 3.3V. VDDA (analog supply) must be 2.4V to 3.6V and equal to or higher than VDD. Power consumption: ~36mA at 72MHz in Run mode, down to 2┬╡A in Standby mode. The chip has internal voltage regulator. For stable operation, provide adequate decoupling capacitors: 100nF ceramic on each VDD pin, 4.7┬╡F + 100nF on VDDA, 100nF on VBAT."
+    },
+    {
+      "id": "rtc",
+      "topic": "RTC",
+      "keywords": "[\"RTC\",\"real-time\",\"clock\",\"calendar\",\"backup\"]",
+      "content": "The RTC provides a seconds counter (not calendar - software must convert). Clock sources: LSE (32.768kHz crystal on PC14/PC15), LSI (~40kHz), or HSE/128. LSE gives best accuracy. RTC continues running in Stop and Standby modes if VBAT is supplied. RTC alarm can wake the chip from low-power modes. The 20-byte backup registers also remain powered by VBAT. For battery backup, connect a 3V coin cell to VBAT pin."
+    },
+    {
+      "id": "reset_circuit",
+      "topic": "Reset",
+      "keywords": "[\"reset\",\"NRST\",\"power-on\",\"circuit\"]",
+      "content": "The NRST pin is active-low reset input with internal pull-up. Reset sources: external reset (NRST pin low), power-on/power-down reset, watchdog reset, software reset, low-power mode reset. Minimum reset pulse width is 20┬╡s. A simple reset circuit: 100nF capacitor from NRST to GND with optional 10K resistor to VDD. For noise immunity in industrial applications, add a reset supervisor IC."
+    },
+    {
+      "id": "spi_clock",
+      "topic": "SPI",
+      "keywords": "[\"SPI\",\"clock\",\"speed\",\"baud\",\"prescaler\",\"CPOL\",\"CPHA\"]",
+      "content": "SPI clock is derived from the peripheral bus clock via prescaler (2, 4, 8, 16, 32, 64, 128, or 256). SPI1 max speed: 72MHz/2 = 36MHz as master. SPI2 max speed: 36MHz/2 = 18MHz as master. Clock polarity (CPOL) and phase (CPHA) are configurable for compatibility with different slave devices. Mode 0: CPOL=0, CPHA=0 (clock idle low, sample on rising edge). Mode 3: CPOL=1, CPHA=1 (clock idle high, sample on falling edge)."
+    },
+    {
+      "id": "spi_generic_connection",
+      "topic": "SPI",
+      "keywords": "spi connect wire sensor module any unknown generic how to hookup setup",
+      "content": "Generic SPI device connection guide for STM32F103C8T6: Any SPI device needs 4+ wires: VCC, GND, SCK (clock), MOSI (data to device), MISO (data from device), and CS/SS (chip select, one per device). Use SPI1 by default: PA5 (SCK), PA6 (MISO), PA7 (MOSI), PA4 (CS). SPI2: PB13 (SCK), PB14 (MISO), PB15 (MOSI), PB12 (CS). CS pin can be any GPIO. Multiple SPI devices share SCK/MOSI/MISO but each needs its own CS pin. SPI is faster than I2C (up to 18Mbit/s on SPI1) but uses more pins. Some devices are SPI-only (SD cards, most TFT displays, NRF24L01). SPI modes (CPOL/CPHA) must match the device datasheet. Most devices use Mode 0 (CPOL=0, CPHA=0)."
+    },
+    {
+      "id": "spi_overview",
+      "topic": "SPI",
+      "keywords": "[\"SPI\",\"interface\",\"serial\",\"peripheral\"]",
+      "content": "The STM32F103C8T6 has two SPI interfaces (SPI1 and SPI2). SPI1 is on APB2 (up to 18Mbit/s at 72MHz). SPI2 is on APB1 (up to 18Mbit/s at 36MHz). Features include full-duplex synchronous transfer, 8 or 16-bit data frame, master or slave mode, hardware CRC calculation, and DMA capability. SPI uses 4 signals: SCK (clock), MOSI (Master Out Slave In), MISO (Master In Slave Out), and NSS (slave select)."
+    },
+    {
+      "id": "spi_pins",
+      "topic": "SPI",
+      "keywords": "[\"SPI\",\"pin\",\"SCK\",\"MOSI\",\"MISO\",\"NSS\",\"remap\"]",
+      "content": "SPI1 default pins: SCK=PA5, MISO=PA6, MOSI=PA7, NSS=PA4. SPI1 remap pins: SCK=PB3, MISO=PB4, MOSI=PB5, NSS=PA15. Using SPI1 remap requires disabling JTAG (PB3/PB4 are JTAG pins). SPI2 pins (no remap): SCK=PB13, MISO=PB14, MOSI=PB15, NSS=PB12. The NSS pin can be managed by hardware or software; software NSS (using any GPIO) is more flexible."
+    },
+    {
+      "id": "camera_modules_general",
+      "topic": "Sensors",
+      "keywords": "camera ov7670 ov2640 arducam image capture photo video vision",
+      "content": "Camera module guide for STM32F103C8T6: OV7670 (no FIFO): 640x480 VGA, parallel interface needing 8 data pins + VSYNC + HREF + PCLK + XCLK + I2C (SCCB). This uses ~12 GPIO pins and requires precise timing. VERY challenging on STM32F103C8T6 due to limited RAM (20KB — one VGA frame is 614KB). Practical approach: capture at QQVGA (160x120) or use OV7670 with FIFO buffer (AL422B). OV2640: 2MP, similar parallel interface, often with FIFO. ArduCAM Mini: SPI interface + I2C for config — much easier to use, only needs SPI1 + I2C1 + CS pin. IMPORTANT: the STM32F103C8T6 is not ideal for camera applications due to RAM limitations. Consider STM32F4 series for serious image processing. For simple image capture and transfer via UART, ArduCAM Mini with SPI is the practical choice."
+    },
+    {
+      "id": "common_sensor_list",
+      "topic": "Sensors",
+      "keywords": "[\"sensor\",\"module\",\"common\",\"popular\",\"list\"]",
+      "content": "Common sensors compatible with STM32F103C8T6: I2C: MPU6050 (IMU), BMP280/BME280 (pressure/humidity), SSD1306 (OLED display), DS3231 (RTC), PCF8574 (GPIO expander). SPI: MAX31855 (thermocouple), MCP3008 (ADC), SD card, ILI9341 (TFT display), NRF24L01 (radio). UART: GPS modules, ESP8266, Bluetooth HC-05/06. Analog: photoresistors, thermistors, potentiometers. Digital: DHT11/22 (temperature/humidity), HC-SR04 (ultrasonic)."
+    },
+    {
+      "id": "current_sensors_general",
+      "topic": "Sensors",
+      "keywords": "current sensor ina219 ina226 acs712 acs758 voltage measurement power monitor shunt",
+      "content": "Current and power sensor guide for STM32F103C8T6: INA219 (I2C, 0x40-0x4F): high-side current + voltage + power measurement, 26V max, configurable shunt resistor. Connect to PB6/PB7 I2C bus. Very accurate, 12-bit. INA226: similar but 36V max and 16-bit. ACS712 (analog output): Hall-effect current sensor, 5A/20A/30A versions, outputs analog voltage centered at VCC/2 (2.5V at 0A). Connect output to ADC pin — output may exceed 3.3V, use a voltage divider. Needs 5V VCC. ACS758: higher current version (50A-200A), same concept. For simple voltage measurement: use a resistor divider to bring voltage below 3.3V, connect to ADC pin. Example: 2x 10k dividers halve the voltage (max 6.6V input). For battery monitoring: INA219 is best (gives voltage, current, and power over I2C)."
+    },
+    {
+      "id": "display_modules_general",
+      "topic": "Sensors",
+      "keywords": "display oled lcd tft screen ssd1306 st7735 ili9341 hd44780 nokia 5110 pcd8544 max7219 seven segment",
+      "content": "Display modules compatible with STM32F103C8T6: I2C OLED: SSD1306 0.96\"/1.3\" (I2C 0x3C/0x3D, PB6/PB7, very common). SPI OLED: SSD1306 SPI variant (faster, uses SPI1 + DC + CS + RST pins). SPI TFT: ST7735 1.8\" (SPI1 + DC + CS + RST), ILI9341 2.4\"+ (SPI1, fast with DMA). Parallel LCD: HD44780 16x2 (needs 6+ GPIO pins, consider I2C adapter PCF8574 to use just 2 pins). SPI LED matrix: MAX7219 (SPI1 + CS, chainable). Nokia 5110/PCD8544 (SPI + DC + CS + RST). For SPI displays, use SPI1 (PA5/PA6/PA7) for maximum speed. DC (data/command) and RST can be any GPIO."
+    },
+    {
+      "id": "distance_sensors_general",
+      "topic": "Sensors",
+      "keywords": "distance sensor hcsr04 ultrasonic vl53l0x vl53l1x tof lidar ir sharp range proximity",
+      "content": "Distance sensor connection guide for STM32F103C8T6: HC-SR04 ultrasonic (2-400cm): TRIG to any GPIO (10us pulse), ECHO to 5V-tolerant pin (use PA8-PA15 or PB6-PB15) or voltage divider. VCC=5V. Measure echo pulse width with timer input capture or GPIO polling. VL53L0X/VL53L1X ToF laser (up to 2m/4m): I2C (0x29 default), connect to PB6/PB7, 3.3V compatible, very accurate. VL53L4CD/VL53L5CX: same I2C bus, multi-zone. Sharp GP2Y0A21 IR analog (10-80cm): analog voltage output to ADC pin (PA0-PA7), NOT 5V tolerant so check sensor output range. TF-Luna/TFMini LiDAR (0.1-12m): UART at 115200 baud (PA9/PA10) or I2C. For multiple ultrasonic sensors: use one TRIG but separate ECHO pins, or multiplex with GPIO."
+    },
+    {
+      "id": "eeprom_storage_modules",
+      "topic": "Sensors",
+      "keywords": "eeprom storage memory at24c32 at24c64 at24c256 w25q flash save data persistent non-volatile",
+      "content": "External storage modules for STM32F103C8T6: I2C EEPROM: AT24C32 (4KB), AT24C64 (8KB), AT24C256 (32KB). Address: 0x50-0x57 (set by A0-A2 pins). Connect to PB6/PB7 I2C bus. Write is slow (~5ms per page) but reads are fast. Good for config storage, calibration data, small logs. Often bundled with DS3231 RTC modules. SPI Flash: W25Q32 (4MB), W25Q64 (8MB), W25Q128 (16MB). Connect to SPI1 (PA5-PA7 + CS on any GPIO). Much faster than EEPROM, good for data logging, audio storage. Sector erase required before write (4KB sectors). Internal flash: STM32F103C8T6 has 64KB, you can use the last few pages for persistent storage — but be careful with wear leveling and write during execution. SD card via SPI is best for large data logging."
+    },
+    {
+      "id": "environmental_sensors_general",
+      "topic": "Sensors",
+      "keywords": "temperature humidity pressure barometer bmp280 bme280 bme680 dht11 dht22 sht31 si7021 htu21d aht20 lm35 tmp36",
+      "content": "Environmental sensors compatible with STM32F103C8T6: Temperature/pressure I2C: BMP280 (0x76/0x77), BME280 (adds humidity, 0x76/0x77), BME680 (adds gas, 0x76/0x77), MS5611 (0x77). Temperature/humidity I2C: SHT31 (0x44/0x45), SI7021/HTU21D (0x40), AHT20 (0x38). Digital single-wire: DHT11 (basic, any GPIO + 10k pull-up), DHT22/AM2302 (better accuracy, same wiring). Analog: LM35/TMP36 (voltage output to ADC pin, NOT 5V tolerant pins), thermistors (need voltage divider with known resistor). All I2C sensors connect to PB6/PB7 with pull-ups. Multiple I2C sensors with different addresses can share the same bus."
+    },
+    {
+      "id": "imu_sensors_general",
+      "topic": "Sensors",
+      "keywords": "imu accelerometer gyroscope magnetometer motion mpu6050 mpu9250 lsm6ds3 bmi160 icm20948 adxl345 lis3dh bno055",
+      "content": "IMU and motion sensors compatible with STM32F103C8T6: Most IMUs use I2C or SPI. Common models: MPU6050 (6-axis, I2C 0x68/0x69), MPU9250 (9-axis, I2C/SPI), ICM-20948 (9-axis, I2C/SPI, successor to MPU9250), LSM6DS3 (6-axis, I2C 0x6A/0x6B or SPI), BMI160 (6-axis, I2C 0x68/0x69 or SPI), ADXL345 (3-axis accel, I2C 0x53 or SPI), LIS3DH (3-axis accel, I2C 0x18/0x19 or SPI), BNO055 (9-axis with sensor fusion, I2C 0x28/0x29). All can connect via I2C1 (PB6 SCL, PB7 SDA) with pull-ups. For SPI connection, use SPI1 (PA5 SCK, PA6 MISO, PA7 MOSI) plus a CS pin. Most breakout boards are 3.3V compatible and include pull-ups."
+    },
+    {
+      "id": "motor_driver_modules",
+      "topic": "Sensors",
+      "keywords": "motor driver h-bridge l298n drv8833 tb6612 l293d a4988 drv8825 stepper dc brushed",
+      "content": "Motor driver modules for STM32F103C8T6: DC motors: L298N (dual H-bridge, 2A per channel, needs 7-12V supply, ENA/ENB for PWM speed control + IN1-IN4 for direction — 6 GPIO pins total). DRV8833 (dual, 1.5A, 2.7-10.8V, simpler — just 4 PWM pins). TB6612FNG (dual, 1.2A, best efficiency — PWMA/PWMB + AIN1/AIN2/BIN1/BIN2 + STBY). L293D (dual, 600mA, DIP package for breadboards). Stepper motors: A4988 (up to 2A, needs STEP + DIR pins, microstepping via MS1/MS2/MS3). DRV8825 (up to 2.5A, same pinout as A4988, 32 microsteps). TMC2209 (silent, UART config, STEP+DIR). For all drivers: connect motor power supply separately (NOT from STM32 3.3V), share GND with STM32, connect STEP/DIR/PWM/IN pins to any GPIO."
+    },
+    {
+      "id": "rtc_modules_general",
+      "topic": "Sensors",
+      "keywords": "rtc real time clock ds3231 ds1307 pcf8563 time date calendar battery backup alarm",
+      "content": "RTC module connection guide for STM32F103C8T6: DS3231 (recommended): I2C (0x68), extremely accurate (+/-2ppm), built-in temperature compensation, battery backup (CR2032), alarm functions, 32KHz output. Connect SDA/SCL to PB6/PB7. NOTE: address 0x68 conflicts with MPU6050 — use AD0 pin on MPU6050 to change its address to 0x69 if using both. DS1307: I2C (0x68), needs external 32.768kHz crystal, less accurate than DS3231, battery backup. Cheaper but drifts more. PCF8563: I2C (0x51), low power, different address so no conflicts. Internal RTC: STM32F103C8T6 has a built-in RTC that can use a 32.768kHz LSE crystal (on PC14/PC15) with VBAT battery backup. The internal RTC is a seconds counter only — you must convert to/from calendar in software. External modules give you calendar format directly."
+    },
+    {
+      "id": "sensor_wiring_mpu6050",
+      "topic": "Sensors",
+      "keywords": "[\"MPU6050\",\"GY-521\",\"accelerometer\",\"gyroscope\",\"IMU\",\"wire\",\"connect\"]",
+      "content": "MPU6050/GY-521 wiring to STM32F103C8T6: VCCΓåÆ3.3V, GNDΓåÆGND, SCLΓåÆPB6 (I2C1_SCL), SDAΓåÆPB7 (I2C1_SDA). Optional: INTΓåÆany GPIO for interrupt, AD0ΓåÆGND for address 0x68 or VCC for 0x69. Most GY-521 modules have built-in pull-ups. If using I2C2: SCLΓåÆPB10, SDAΓåÆPB11. Configure I2C for 400kHz. The MPU6050 is 3.3V compatible; do not power from 5V if using 3.3V logic."
+    },
+    {
+      "id": "sensor_wiring_spi_generic",
+      "topic": "Sensors",
+      "keywords": "[\"SPI\",\"sensor\",\"wire\",\"connect\",\"SD\",\"card\",\"display\"]",
+      "content": "Generic SPI device wiring: SCKΓåÆPA5 (SPI1_SCK), MISOΓåÆPA6 (SPI1_MISO), MOSIΓåÆPA7 (SPI1_MOSI), CSΓåÆany GPIO (e.g., PA4). For SD card modules, add 10K pull-up on MISO. Most SPI devices are active-low chip select. If using SPI2: SCKΓåÆPB13, MISOΓåÆPB14, MOSIΓåÆPB15, CSΓåÆany GPIO. For 3.3V-only devices, do not connect to 5V signals. Level shifter needed if interfacing with 5V SPI devices."
+    },
+    {
+      "id": "sensor_wiring_uart_gps",
+      "topic": "Sensors",
+      "keywords": "[\"GPS\",\"UART\",\"serial\",\"wire\",\"connect\",\"NEO\"]",
+      "content": "GPS module (e.g., NEO-6M) wiring: VCCΓåÆ3.3V (or 5V if module has regulator), GNDΓåÆGND, TX (GPS)ΓåÆPA10 (USART1_RX), RX (GPS)ΓåÆPA9 (USART1_TX). Note TX connects to RX and vice versa. Default baud rate usually 9600. GPS modules output NMEA sentences continuously. If using USART2: TXΓåÆPA3, RXΓåÆPA2. Some GPS modules are 3.3V only - check before connecting to 5V."
+    },
+    {
+      "id": "stepper_motor_connection",
+      "topic": "Sensors",
+      "keywords": "stepper motor nema17 nema23 28byj bipolar unipolar a4988 uln2003 steps rotation position",
+      "content": "Stepper motor connection guide for STM32F103C8T6: Bipolar steppers (NEMA17, 4 wires): use A4988 or DRV8825 driver. Wiring: STEP pin to any GPIO (or timer for precise timing), DIR to any GPIO, ENABLE to any GPIO (active low). Power: VMOT to 12V supply, GND shared with STM32. Set current limit with driver potentiometer. Microstepping: MS1/MS2/MS3 to GPIO or tie high/low. Unipolar steppers (28BYJ-48, 5 wires): use ULN2003 driver board. Connect IN1-IN4 to 4 GPIO pins, power the ULN2003 from 5V. Drive in half-step or full-step sequence in software. For precise positioning: use timer interrupts for consistent step timing. Speed control: vary the timer frequency. Acceleration: ramp the step rate up/down gradually."
+    },
+    {
+      "id": "wireless_modules_general",
+      "topic": "Sensors",
+      "keywords": "wireless radio wifi bluetooth ble lora nrf24l01 esp8266 esp32 hc05 hc06 rfm95 rfm69 sx1276 cc1101 xbee zigbee",
+      "content": "Wireless modules compatible with STM32F103C8T6: SPI radio: NRF24L01 (2.4GHz, SPI1 + CE + CS pins, 3.3V only), RFM69/RFM95/SX1276 LoRa (SPI + CS + RST + DIO0 pins), CC1101 (sub-GHz, SPI). UART modules: HC-05/HC-06 Bluetooth Classic (USART1 PA9/PA10, 9600 baud default), HM-10 BLE (UART, 9600 baud), ESP8266 WiFi (UART 115200 baud, needs 3.3V power — NOT from STM32 3.3V pin, use separate regulator), GPS NEO-6M/7M/8M (UART 9600 baud). SPI modules need 3.3V — NRF24L01 is especially sensitive to clean power (add 10uF capacitor near VCC). For ESP8266: TX/RX crossover, CH_PD to 3.3V, GPIO0 high for normal mode."
+    },
+    {
+      "id": "pwm_generic_connection",
+      "topic": "Timer",
+      "keywords": "pwm motor servo esc fan speed control led dimming connect wire generic",
+      "content": "Generic PWM output guide for STM32F103C8T6: PWM is used for servo control, motor speed (via ESC or H-bridge), LED dimming, and fan speed. PWM-capable pins are on timer channels: TIM1 (PA8-PA11), TIM2 (PA0-PA3), TIM3 (PA6-PA7, PB0-PB1), TIM4 (PB6-PB9). Servos need 50Hz PWM with 1-2ms pulse width — connect signal wire to any timer pin, VCC to 5V (external supply for multiple servos), GND to common ground. DC motors need an H-bridge driver (L298N, DRV8833, TB6612) — connect PWM to enable pin, direction pins to any GPIO. ESCs accept standard servo PWM signals. IMPORTANT: never drive motors directly from GPIO pins — max GPIO current is 25mA."
+    },
+    {
+      "id": "timer_advanced_features",
+      "topic": "Timer",
+      "keywords": "timer complementary dead time brake center aligned repetition advanced tim1",
+      "content": "Advanced timer features (TIM1) on STM32F103C8T6: TIM1 is the advanced-control timer with features for motor control. Complementary outputs: CH1/CH1N, CH2/CH2N, CH3/CH3N — generates complementary PWM pairs for H-bridge driving. Dead-time insertion: prevents shoot-through in half-bridge circuits by adding a gap between complementary signals. Break input (BKIN on PB12): emergency shutdown — immediately disables all outputs (for overcurrent protection). Center-aligned PWM: counts up then down for symmetric PWM waveforms (reduces harmonics in motor control). Repetition counter: generate update events every N overflow cycles. TIM1 channels: PA8 (CH1), PA9 (CH2), PA10 (CH3), PA11 (CH4). Complementary: PB13 (CH1N), PB14 (CH2N), PB15 (CH3N)."
+    },
+    {
+      "id": "timer_input_capture",
+      "topic": "Timer",
+      "keywords": "timer input capture frequency measurement pulse width echo encoder counter",
+      "content": "Timer input capture guide for STM32F103C8T6: Input capture measures the timing of external signals. Uses: frequency measurement, pulse width measurement (HC-SR04 echo), RPM counting, period measurement. Configure timer channel as input capture, trigger on rising/falling/both edges. The timer counter value is captured on each edge. For HC-SR04: trigger pin = any GPIO output (10us pulse), echo pin = timer input capture channel. Measure time between rising and falling edge of echo. Timer pins: TIM1 CH1-CH4 (PA8-PA11), TIM2 CH1-CH4 (PA0-PA3), TIM3 CH1-CH2 (PA6-PA7), TIM3 CH3-CH4 (PB0-PB1), TIM4 CH1-CH4 (PB6-PB9). Encoder mode: TIM1-TIM4 can count quadrature encoder pulses in hardware using CH1+CH2 — no CPU overhead, handles both direction and position."
+    },
+    {
+      "id": "timer_overview",
+      "topic": "Timer",
+      "keywords": "[\"timer\",\"TIM\",\"PWM\",\"counter\",\"pulse\"]",
+      "content": "STM32F103C8T6 has 4 timers. TIM1 is an advanced 16-bit timer with complementary outputs, dead-time, and break input for motor control. TIM2, TIM3, TIM4 are general-purpose 16-bit timers with 4 capture/compare channels each. All timers support PWM output, input capture, output compare, encoder interface, and can trigger DMA/interrupts. Timer clock is 72MHz when APB prescaler is >1 (timers get 2x the APB clock)."
+    },
+    {
+      "id": "timer_pwm",
+      "topic": "Timer",
+      "keywords": "[\"PWM\",\"pulse\",\"width\",\"modulation\",\"duty\",\"frequency\"]",
+      "content": "To generate PWM: Set timer period (ARR register) to define frequency: PWM_freq = Timer_clock / (PSC+1) / (ARR+1). Set capture/compare value (CCR) to define duty cycle: Duty = CCR / ARR ├ù 100%. Example for 1kHz PWM at 72MHz timer clock: PSC=71, ARR=999 gives exactly 1kHz. CCR=500 gives 50% duty cycle. PWM resolution depends on ARR value - higher ARR means finer duty cycle control but lower maximum frequency."
+    },
+    {
+      "id": "common_mistakes",
+      "topic": "Troubleshooting",
+      "keywords": "[\"problem\",\"mistake\",\"error\",\"not working\",\"debug\",\"troubleshoot\"]",
+      "content": "Common STM32 mistakes: 1) Forgetting to enable peripheral clock (RCC_APBxENR). 2) Not configuring GPIO alternate function mode. 3) Missing I2C pull-ups or using internal pull-ups (too weak). 4) Applying 5V to non-FT pins. 5) JTAG pins not freed for GPIO use. 6) Wrong Flash wait states for clock speed. 7) APB1 running above 36MHz. 8) Incorrect baud rate calculation. 9) Floating unused inputs causing excess current. 10) BOOT0 floating or pulled high, entering bootloader instead of running Flash code."
+    },
+    {
+      "id": "uart_generic_connection",
+      "topic": "USART",
+      "keywords": "uart usart serial connect wire module any unknown generic how to hookup setup tx rx",
+      "content": "Generic UART/serial device connection guide for STM32F103C8T6: Any UART device needs 3-4 wires: VCC, GND, TX, RX. CRITICAL: Cross TX/RX lines — STM32 TX connects to device RX, STM32 RX connects to device TX. Use USART1 by default: PA9 (TX), PA10 (RX). USART2: PA2 (TX), PA3 (RX). USART3: PB10 (TX), PB11 (RX) but conflicts with I2C2. Common baud rate: 9600 for GPS and Bluetooth, 115200 for debug and ESP modules. IMPORTANT: STM32F103C8T6 runs at 3.3V logic. If the UART device uses 5V logic, you need a voltage divider on the STM32 RX pin (two resistors, e.g., 1k and 2k) or a level shifter. The TX pin is usually fine since 3.3V is read as HIGH by most 5V devices."
+    },
+    {
+      "id": "usart_baud_rate",
+      "topic": "USART",
+      "keywords": "[\"USART\",\"UART\",\"baud\",\"rate\",\"speed\",\"115200\"]",
+      "content": "USART baud rate is calculated from the peripheral clock using a fractional divider. Common baud rates: 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600. USART1 max is about 4.5Mbit/s at 72MHz. For accurate baud rates, the peripheral clock should be evenly divisible. At 72MHz, 115200 baud works well. The BRR register contains a 12-bit mantissa and 4-bit fraction for precise baud generation."
+    },
+    {
+      "id": "usart_overview",
+      "topic": "USART",
+      "keywords": "[\"USART\",\"UART\",\"serial\",\"RS232\",\"communication\"]",
+      "content": "The STM32F103C8T6 has three USARTs. USART1 is on APB2 (72MHz), supporting up to 4.5Mbit/s. USART2 and USART3 are on APB1 (36MHz). All support full-duplex asynchronous communication, synchronous mode, LIN, IrDA, and Smartcard protocols. Features include programmable baud rate, 8 or 9-bit data, 1 or 2 stop bits, parity control, DMA support, and hardware flow control (CTS/RTS)."
+    },
+    {
+      "id": "usart_pins",
+      "topic": "USART",
+      "keywords": "[\"USART\",\"UART\",\"pin\",\"TX\",\"RX\",\"remap\"]",
+      "content": "USART1 default: TX=PA9, RX=PA10. USART1 remap: TX=PB6, RX=PB7. USART2 (no remap on 48-pin package): TX=PA2, RX=PA3. USART3 default: TX=PB10, RX=PB11. Note: USART3 pins conflict with I2C2. For basic UART communication, you only need TX and RX pins. Connect TX of one device to RX of another, and vice versa. For RS232 level conversion, use a MAX232 or similar level shifter."
+    },
+    {
+      "id": "usb_generic_connection",
+      "topic": "USB",
+      "keywords": "usb connect wire device hid cdc serial keyboard mouse mass storage dfu bootloader",
+      "content": "USB connection guide for STM32F103C8T6: USB pins are PA11 (D-) and PA12 (D+). The Blue Pill board typically has a USB connector already wired. For custom boards: D+ needs a 1.5k pull-up resistor to 3.3V (signals device presence to host). USB is Full-Speed (12Mbit/s). Common USB classes: CDC (virtual serial port — easiest, appears as COM port), HID (keyboard/mouse/gamepad, no driver needed), MSC (mass storage). IMPORTANT: USB shares PA11/PA12 with CAN — cannot use both. The 48MHz USB clock must be derived from PLL (use 8MHz HSE crystal for accurate timing). Blue Pill boards often have wrong pull-up resistor value (10k instead of 1.5k) — may need hardware mod. DFU bootloader mode: set BOOT0=1, reset, flash via USB with dfu-util."
+    },
+    {
+      "id": "usb_overview",
+      "topic": "USB",
+      "keywords": "[\"USB\",\"interface\",\"device\"]",
+      "content": "The STM32F103C8T6 has a USB 2.0 Full-Speed (12Mbit/s) device interface. It supports control, bulk, interrupt, and isochronous transfers. USB uses pins PA11 (D-) and PA12 (D+). These pins are shared with CAN - you cannot use USB and CAN default pins simultaneously. For USB, the PLL must output 48MHz or 72MHz (USB prescaler divides by 1 or 1.5). A 1.5k╬⌐ pull-up on D+ is required (some boards have this built-in)."
+    },
+    {
+      "id": "watchdog",
+      "topic": "Watchdog",
+      "keywords": "[\"watchdog\",\"IWDG\",\"WWDG\",\"timeout\",\"reset\"]",
+      "content": "Two watchdog timers are available. The Independent Watchdog (IWDG) uses the 40kHz LSI clock, provides timeout from 100┬╡s to 26 seconds, and cannot be disabled once started. The Window Watchdog (WWDG) uses APB1 clock, must be refreshed within a timing window (not too early, not too late), and generates an early warning interrupt. Use IWDG for reliability; WWDG for detecting code timing issues."
+    },
+    {
+      "id": "watchdog_practical",
+      "topic": "Watchdog",
+      "keywords": "watchdog iwdg wwdg reset hang crash recover timeout reliable",
+      "content": "Watchdog practical guide for STM32F103C8T6: Use the Independent Watchdog (IWDG) to automatically reset the MCU if your code hangs. Setup: enable IWDG, set prescaler and reload value to define timeout (e.g., prescaler=64, reload=625 gives ~1 second timeout). Call IWDG refresh (kick the dog) regularly in your main loop. If the code crashes, hangs in an infinite loop, or gets stuck waiting for a peripheral — the watchdog will reset the MCU. Window Watchdog (WWDG) is more precise — must be refreshed within a specific time window, not just before timeout. Useful for detecting timing errors. Common pattern: initialize IWDG with 2-4 second timeout, refresh at the top of your main while loop. For multi-task systems: each task sets a flag, watchdog refresh only if all flags are set."
+    },
+    {
+      "id": "bus_architecture",
+      "topic": "architecture",
+      "keywords": "[\"bus\",\"APB1\",\"APB2\",\"AHB\",\"peripheral\",\"speed\"]",
+      "content": "The STM32F103 uses a Harvard architecture with separate instruction and data buses. The AHB (Advanced High-performance Bus) connects the core, DMA, and memory at up to 72MHz. Two APB buses connect peripherals: APB2 runs at full speed (72MHz) and connects fast peripherals like ADC, SPI1, USART1, TIM1, and GPIO. APB1 is limited to 36MHz and connects slower peripherals like I2C, SPI2, USART2/3, TIM2-4."
+    },
+    {
+      "id": "clock_configuration",
+      "topic": "clock",
+      "keywords": "[\"PLL\",\"configure\",\"setup\",\"72MHz\",\"maximum speed\",\"clock tree\"]",
+      "content": "To achieve maximum 72MHz speed: Use an 8MHz external crystal on HSE, enable the PLL with a multiplication factor of 9 (8MHz x 9 = 72MHz). The AHB bus runs at SYSCLK speed (72MHz max). APB1 is limited to 36MHz max (use prescaler /2 when SYSCLK is 72MHz). APB2 runs at full SYSCLK speed. Flash wait states must be configured: 0 wait states for 0-24MHz, 1 wait state for 24-48MHz, 2 wait states for 48-72MHz."
+    },
+    {
+      "id": "clock_sources",
+      "topic": "clock",
+      "keywords": "[\"clock\",\"oscillator\",\"crystal\",\"HSE\",\"HSI\",\"frequency\",\"MHz\",\"speed\"]",
+      "content": "The STM32F103C8T6 has multiple clock sources. The HSI (High Speed Internal) is an 8MHz factory-calibrated RC oscillator. The HSE (High Speed External) supports 4-16MHz crystals. The LSI is a 40kHz internal RC for watchdog/RTC. The LSE is 32.768kHz for RTC. The maximum system clock (SYSCLK) is 72MHz, achieved by using PLL multiplication of the HSE or HSI/2."
+    },
+    {
+      "id": "chip_overview",
+      "topic": "general",
+      "keywords": "[\"overview\",\"specs\",\"specifications\",\"what is\",\"about\"]",
+      "content": "The STM32F103C8T6 is a medium-density performance line ARM Cortex-M3 microcontroller. It features 64KB Flash memory, 20KB SRAM, runs at up to 72MHz, and comes in a 48-pin LQFP package. It includes 2 ADCs (12-bit), 3 general-purpose 16-bit timers, 1 PWM timer, 2 I2C interfaces, 2 SPI interfaces, 3 USARTs, USB, CAN, and 37 GPIO pins."
+    },
+    {
+      "id": "memory_specs",
+      "topic": "memory",
+      "keywords": "[\"memory\",\"flash\",\"RAM\",\"SRAM\",\"storage\",\"size\"]",
+      "content": "The STM32F103C8T6 has 64KB of Flash memory for program storage and 20KB of SRAM for data. The Flash memory is located at address 0x08000000 and SRAM at 0x20000000. The memory is organized in Little Endian format. Flash can be programmed in 16-bit half-words and has a typical endurance of 10,000 write/erase cycles."
+    }
+  ],
+  "device_patterns": [
+    {
+      "id": "a4988",
+      "device_name": "A4988",
+      "device_type": "Stepper Motor Driver",
+      "interface_type": "GPIO",
+      "default_pins": "{\"STEP\": \"PA0\", \"DIR\": \"PA1\", \"ENABLE\": \"PA2\"}",
+      "requirements": "Separate motor power supply 8-35V",
+      "notes": "Connect STEP to timer pin for precise frequency control. MS1/MS2/MS3 for microstepping. Current limit set by potentiometer.",
+      "keywords": "A4988 stepper motor driver NEMA step direction"
+    },
+    {
+      "id": "ads1115",
+      "device_name": "ADS1115",
+      "device_type": "ADC (16-bit External)",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors",
+      "notes": "I2C address: 0x48-0x4B. 16-bit 4-channel ADC with programmable gain. Much higher resolution than the built-in 12-bit ADC. Good for precision measurements.",
+      "keywords": "ADS1115 ADS1015 ADC analog digital converter 16-bit precision I2C"
+    },
+    {
+      "id": "bmp280",
+      "device_name": "BMP280",
+      "device_type": "Pressure/Temperature Sensor",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors on SCL and SDA",
+      "notes": "3.3V compatible. I2C address: 0x76 or 0x77. Also supports SPI.",
+      "keywords": "BMP280 pressure temperature barometer sensor"
+    },
+    {
+      "id": "button",
+      "device_name": "Button",
+      "device_type": "Input",
+      "interface_type": "GPIO",
+      "default_pins": "{\"BUTTON\": \"PB0\"}",
+      "requirements": "10k pull-up or pull-down resistor",
+      "notes": "Any GPIO pin works. Enable internal pull-up/pull-down in code.",
+      "keywords": "button switch input GPIO"
+    },
+    {
+      "id": "dht22",
+      "device_name": "DHT22",
+      "device_type": "Temperature/Humidity Sensor",
+      "interface_type": "GPIO",
+      "default_pins": "{\"DATA\": \"PA0\"}",
+      "requirements": "10k pull-up resistor on data line",
+      "notes": "Single-wire protocol. Range: -40-80C, 0-100% RH. 3.3V or 5V compatible. Reads every 2 seconds max.",
+      "keywords": "DHT22 AM2302 temperature humidity digital"
+    },
+    {
+      "id": "ds3231",
+      "device_name": "DS3231",
+      "device_type": "RTC",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors on SCL and SDA",
+      "notes": "I2C address: 0x68. 3.3V compatible.",
+      "keywords": "DS3231 RTC real-time clock"
+    },
+    {
+      "id": "gps",
+      "device_name": "GPS Module",
+      "device_type": "GPS Receiver",
+      "interface_type": "UART",
+      "default_pins": "{\"TX\": \"PA9\", \"RX\": \"PA10\"}",
+      "requirements": "None",
+      "notes": "Most GPS modules are 3.3V compatible. Common: NEO-6M, NEO-7M.",
+      "keywords": "GPS NEO-6M NEO-7M location UART serial"
+    },
+    {
+      "id": "hc05",
+      "device_name": "HC-05",
+      "device_type": "Bluetooth Module",
+      "interface_type": "UART",
+      "default_pins": "{\"TX\": \"PA9\", \"RX\": \"PA10\"}",
+      "requirements": "Voltage divider for RX (5V to 3.3V)",
+      "notes": "Module runs at 5V but TX is 3.3V compatible. RX needs voltage divider.",
+      "keywords": "HC-05 HC05 bluetooth serial UART"
+    },
+    {
+      "id": "hcsr04",
+      "device_name": "HC-SR04",
+      "device_type": "Ultrasonic Distance Sensor",
+      "interface_type": "GPIO",
+      "default_pins": "{\"TRIG\": \"PA1\", \"ECHO\": \"PA8\"}",
+      "requirements": "Voltage divider on ECHO if using non-5V-tolerant pin",
+      "notes": "5V sensor. ECHO pin outputs 5V — use 5V-tolerant pin or voltage divider. Range: 2-400cm.",
+      "keywords": "HC-SR04 HCSR04 ultrasonic distance sonar range"
+    },
+    {
+      "id": "ili9341",
+      "device_name": "ILI9341",
+      "device_type": "TFT Display (2.4\"+)",
+      "interface_type": "SPI",
+      "default_pins": "{\"SCK\": \"PA5\", \"MISO\": \"PA6\", \"MOSI\": \"PA7\", \"CS\": \"PA4\", \"DC\": \"PA3\", \"RST\": \"PA2\"}",
+      "requirements": "None",
+      "notes": "SPI TFT color display. 240x320 resolution. Use DMA for fast updates. Some modules include touch screen (XPT2046 on separate SPI CS). LED backlight pin needs 3.3V.",
+      "keywords": "ILI9341 TFT LCD display color screen SPI touch"
+    },
+    {
+      "id": "ina219",
+      "device_name": "INA219",
+      "device_type": "Current/Power Sensor",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors",
+      "notes": "I2C address: 0x40-0x4F (configurable via A0/A1). Measures current, voltage, and power. 26V max bus voltage.",
+      "keywords": "INA219 current power voltage sensor monitor I2C"
+    },
+    {
+      "id": "ldr",
+      "device_name": "LDR (Light Sensor)",
+      "device_type": "Analog Input",
+      "interface_type": "ADC",
+      "default_pins": "{\"ADC\": \"PA0\"}",
+      "requirements": "10k resistor for voltage divider",
+      "notes": "Use ADC pins. Create voltage divider with 10k resistor.",
+      "keywords": "LDR photoresistor light sensor analog ADC"
+    },
+    {
+      "id": "led",
+      "device_name": "LED",
+      "device_type": "Output",
+      "interface_type": "GPIO",
+      "default_pins": "{\"LED\": \"PA1\"}",
+      "requirements": "220-330 ohm current-limiting resistor",
+      "notes": "Any GPIO pin works. Choose 5V-tolerant pins for flexibility.",
+      "keywords": "LED light output GPIO"
+    },
+    {
+      "id": "mcp4725",
+      "device_name": "MCP4725",
+      "device_type": "DAC (Digital-to-Analog Converter)",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors",
+      "notes": "I2C address: 0x60 or 0x62. 12-bit single channel DAC. Output 0-3.3V. STM32F103C8T6 has no built-in DAC — use this module.",
+      "keywords": "MCP4725 DAC digital analog converter output voltage I2C"
+    },
+    {
+      "id": "mpu6050",
+      "device_name": "MPU6050",
+      "device_type": "Gyroscope/Accelerometer",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors on SCL and SDA",
+      "notes": "3.3V or 5V compatible. I2C address: 0x68 or 0x69. Can remap to PB8/PB9.",
+      "keywords": "MPU6050 GY-521 gyro accelerometer motion IMU"
+    },
+    {
+      "id": "oled-i2c",
+      "device_name": "OLED Display (I2C)",
+      "device_type": "Display",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors recommended",
+      "notes": "Common sizes: 0.96\", 1.3\". I2C address usually 0x3C or 0x3D.",
+      "keywords": "OLED SSD1306 display screen I2C"
+    },
+    {
+      "id": "pca9685",
+      "device_name": "PCA9685",
+      "device_type": "PWM/Servo Driver",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors, external power for servos",
+      "notes": "I2C address: 0x40-0x7F (configurable). 16 PWM channels at 12-bit resolution. Ideal for controlling many servos or LEDs. Separate V+ power for servos.",
+      "keywords": "PCA9685 PWM servo driver 16 channel I2C"
+    },
+    {
+      "id": "potentiometer",
+      "device_name": "Potentiometer",
+      "device_type": "Analog Input",
+      "interface_type": "ADC",
+      "default_pins": "{\"ADC\": \"PA0\"}",
+      "requirements": "None",
+      "notes": "Use ADC-capable pins: PA0-PA7, PB0-PB1. Not 5V tolerant.",
+      "keywords": "potentiometer pot variable resistor analog ADC"
+    },
+    {
+      "id": "relay",
+      "device_name": "Relay Module",
+      "device_type": "Output",
+      "interface_type": "GPIO",
+      "default_pins": "{\"RELAY\": \"PB1\"}",
+      "requirements": "None",
+      "notes": "Most relay modules have optoisolation. Any GPIO works.",
+      "keywords": "relay switch output GPIO"
+    },
+    {
+      "id": "sd-card",
+      "device_name": "SD Card",
+      "device_type": "Storage",
+      "interface_type": "SPI",
+      "default_pins": "{\"SCK\": \"PA5\", \"MISO\": \"PA6\", \"MOSI\": \"PA7\", \"CS\": \"PA4\"}",
+      "requirements": "None",
+      "notes": "Use 3.3V. CS pin can be any GPIO. Fast SPI mode supported.",
+      "keywords": "SD card storage SPI microSD"
+    },
+    {
+      "id": "ssd1306_spi",
+      "device_name": "SSD1306 SPI OLED",
+      "device_type": "Display",
+      "interface_type": "SPI",
+      "default_pins": "{\"SCK\": \"PA5\", \"MOSI\": \"PA7\", \"CS\": \"PA4\", \"DC\": \"PA3\", \"RST\": \"PA2\"}",
+      "requirements": "None",
+      "notes": "SPI OLED is faster than I2C version. DC pin selects data/command. RST pin for hardware reset. No MISO needed (display only). 0.96\" or 1.3\" common sizes.",
+      "keywords": "SSD1306 OLED display SPI screen"
+    },
+    {
+      "id": "vl53l0x",
+      "device_name": "VL53L0X",
+      "device_type": "Time-of-Flight Distance Sensor",
+      "interface_type": "I2C",
+      "default_pins": "{\"SCL\": \"PB6\", \"SDA\": \"PB7\"}",
+      "requirements": "4.7k pull-up resistors",
+      "notes": "I2C address: 0x29. Laser ranging up to 2m. 3.3V compatible. XSHUT pin for address reassignment with multiple sensors.",
+      "keywords": "VL53L0X ToF distance laser range proximity I2C"
+    },
+    {
+      "id": "ws2812b",
+      "device_name": "WS2812B",
+      "device_type": "Addressable LED Strip",
+      "interface_type": "GPIO",
+      "default_pins": "{\"DATA\": \"PA0\"}",
+      "requirements": "330-470 ohm resistor on data line, 1000uF capacitor on power",
+      "notes": "5V LEDs but data line accepts 3.3V from most STM32 pins. Use timer DMA for precise timing. 60mA per LED at full white.",
+      "keywords": "WS2812B WS2812 neopixel addressable LED RGB strip"
+    },
+    {
+      "id": "xbee",
+      "device_name": "XBee",
+      "device_type": "Wireless Module",
+      "interface_type": "UART",
+      "default_pins": "{\"TX\": \"PA9\", \"RX\": \"PA10\"}",
+      "requirements": "None",
+      "notes": "3.3V logic levels. Connect XBee TX to STM32 RX and vice versa.",
+      "keywords": "XBee zigbee wireless UART serial"
+    },
+    {
+      "id": "nrf24l01",
+      "device_name": "nRF24L01",
+      "device_type": "Wireless Transceiver",
+      "interface_type": "SPI",
+      "default_pins": "{\"SCK\": \"PA5\", \"MISO\": \"PA6\", \"MOSI\": \"PA7\", \"CS\": \"PA4\", \"CE\": \"PB0\"}",
+      "requirements": "None",
+      "notes": "3.3V only. CE and CS pins can be any GPIO.",
+      "keywords": "nRF24L01 wireless radio transceiver SPI"
+    }
+  ],
+  "pins": [
+    {
+      "pin": "VBAT",
+      "port": "",
+      "number": null,
+      "lqfp48": 1,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Battery backup supply for RTC and backup registers"
+    },
+    {
+      "pin": "PC13",
+      "port": "C",
+      "number": 13,
+      "lqfp48": 2,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PC13",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"TAMPER-RTC\",\"peripheral\":\"RTC\",\"remap\":false}]",
+      "notes": "Limited drive: max 3mA sink, max 2MHz speed, max 30pF load. Powered by backup domain power switch."
+    },
+    {
+      "pin": "PC14",
+      "port": "C",
+      "number": 14,
+      "lqfp48": 3,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PC14",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"OSC32_IN\",\"peripheral\":\"RTC\",\"remap\":false}]",
+      "notes": "Limited drive: max 3mA sink, max 2MHz speed. Connect to 32.768kHz crystal for RTC, or use as GPIO."
+    },
+    {
+      "pin": "PC15",
+      "port": "C",
+      "number": 15,
+      "lqfp48": 4,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PC15",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"OSC32_OUT\",\"peripheral\":\"RTC\",\"remap\":false}]",
+      "notes": "Limited drive: max 3mA sink, max 2MHz speed. Connect to 32.768kHz crystal for RTC, or use as GPIO."
+    },
+    {
+      "pin": "OSC_IN",
+      "port": "",
+      "number": null,
+      "lqfp48": 5,
+      "type": "I",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Main oscillator input (4-16MHz crystal or external clock)"
+    },
+    {
+      "pin": "OSC_OUT",
+      "port": "",
+      "number": null,
+      "lqfp48": 6,
+      "type": "O",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Main oscillator output (connect to crystal)"
+    },
+    {
+      "pin": "NRST",
+      "port": "",
+      "number": null,
+      "lqfp48": 7,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Reset input (active LOW) with internal pull-up. Can also be configured as output."
+    },
+    {
+      "pin": "VSSA",
+      "port": "",
+      "number": null,
+      "lqfp48": 8,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Analog ground reference for ADC and other analog blocks"
+    },
+    {
+      "pin": "VDDA",
+      "port": "",
+      "number": null,
+      "lqfp48": 9,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Analog power supply (2.4V to 3.6V). Also serves as VREF+ on LQFP48 package."
+    },
+    {
+      "pin": "PA0",
+      "port": "A",
+      "number": 0,
+      "lqfp48": 10,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA0",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"WKUP\",\"peripheral\":\"SYSTEM\",\"remap\":false},{\"name\":\"USART2_CTS\",\"peripheral\":\"USART2\",\"remap\":false},{\"name\":\"ADC12_IN0\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM2_CH1_ETR\",\"peripheral\":\"TIM2\",\"remap\":false}]",
+      "notes": "WKUP function can wake device from Standby mode."
+    },
+    {
+      "pin": "PA1",
+      "port": "A",
+      "number": 1,
+      "lqfp48": 11,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA1",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART2_RTS\",\"peripheral\":\"USART2\",\"remap\":false},{\"name\":\"ADC12_IN1\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM2_CH2\",\"peripheral\":\"TIM2\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA2",
+      "port": "A",
+      "number": 2,
+      "lqfp48": 12,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA2",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART2_TX\",\"peripheral\":\"USART2\",\"remap\":false},{\"name\":\"ADC12_IN2\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM2_CH3\",\"peripheral\":\"TIM2\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA3",
+      "port": "A",
+      "number": 3,
+      "lqfp48": 13,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA3",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART2_RX\",\"peripheral\":\"USART2\",\"remap\":false},{\"name\":\"ADC12_IN3\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM2_CH4\",\"peripheral\":\"TIM2\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA4",
+      "port": "A",
+      "number": 4,
+      "lqfp48": 14,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA4",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI1_NSS\",\"peripheral\":\"SPI1\",\"remap\":false},{\"name\":\"USART2_CK\",\"peripheral\":\"USART2\",\"remap\":false},{\"name\":\"ADC12_IN4\",\"peripheral\":\"ADC\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA5",
+      "port": "A",
+      "number": 5,
+      "lqfp48": 15,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA5",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI1_SCK\",\"peripheral\":\"SPI1\",\"remap\":false},{\"name\":\"ADC12_IN5\",\"peripheral\":\"ADC\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA6",
+      "port": "A",
+      "number": 6,
+      "lqfp48": 16,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA6",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI1_MISO\",\"peripheral\":\"SPI1\",\"remap\":false},{\"name\":\"ADC12_IN6\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM3_CH1\",\"peripheral\":\"TIM3\",\"remap\":false},{\"name\":\"TIM1_BKIN\",\"peripheral\":\"TIM1\",\"remap\":true}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA7",
+      "port": "A",
+      "number": 7,
+      "lqfp48": 17,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PA7",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI1_MOSI\",\"peripheral\":\"SPI1\",\"remap\":false},{\"name\":\"ADC12_IN7\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM3_CH2\",\"peripheral\":\"TIM3\",\"remap\":false},{\"name\":\"TIM1_CH1N\",\"peripheral\":\"TIM1\",\"remap\":true}]",
+      "notes": ""
+    },
+    {
+      "pin": "PB0",
+      "port": "B",
+      "number": 0,
+      "lqfp48": 18,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PB0",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"ADC12_IN8\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM3_CH3\",\"peripheral\":\"TIM3\",\"remap\":false},{\"name\":\"TIM1_CH2N\",\"peripheral\":\"TIM1\",\"remap\":true}]",
+      "notes": ""
+    },
+    {
+      "pin": "PB1",
+      "port": "B",
+      "number": 1,
+      "lqfp48": 19,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PB1",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"ADC12_IN9\",\"peripheral\":\"ADC\",\"remap\":false},{\"name\":\"TIM3_CH4\",\"peripheral\":\"TIM3\",\"remap\":false},{\"name\":\"TIM1_CH3N\",\"peripheral\":\"TIM1\",\"remap\":true}]",
+      "notes": ""
+    },
+    {
+      "pin": "PB2",
+      "port": "B",
+      "number": 2,
+      "lqfp48": 20,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB2-BOOT1",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"BOOT1\",\"peripheral\":\"SYSTEM\",\"remap\":false}]",
+      "notes": "BOOT1 pin sampled at reset. Used with BOOT0 to select boot mode."
+    },
+    {
+      "pin": "PB10",
+      "port": "B",
+      "number": 10,
+      "lqfp48": 21,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB10",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"I2C2_SCL\",\"peripheral\":\"I2C2\",\"remap\":false},{\"name\":\"USART3_TX\",\"peripheral\":\"USART3\",\"remap\":false},{\"name\":\"TIM2_CH3\",\"peripheral\":\"TIM2\",\"remap\":true}]",
+      "notes": "Conflict: I2C2_SCL and USART3_TX cannot be used simultaneously."
+    },
+    {
+      "pin": "PB11",
+      "port": "B",
+      "number": 11,
+      "lqfp48": 22,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB11",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"I2C2_SDA\",\"peripheral\":\"I2C2\",\"remap\":false},{\"name\":\"USART3_RX\",\"peripheral\":\"USART3\",\"remap\":false},{\"name\":\"TIM2_CH4\",\"peripheral\":\"TIM2\",\"remap\":true}]",
+      "notes": "Conflict: I2C2_SDA and USART3_RX cannot be used simultaneously."
+    },
+    {
+      "pin": "VSS_1",
+      "port": "",
+      "number": null,
+      "lqfp48": 23,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Digital ground"
+    },
+    {
+      "pin": "VDD_1",
+      "port": "",
+      "number": null,
+      "lqfp48": 24,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Digital power supply (2.0V to 3.6V)"
+    },
+    {
+      "pin": "PB12",
+      "port": "B",
+      "number": 12,
+      "lqfp48": 25,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB12",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI2_NSS\",\"peripheral\":\"SPI2\",\"remap\":false},{\"name\":\"I2C2_SMBA\",\"peripheral\":\"I2C2\",\"remap\":false},{\"name\":\"USART3_CK\",\"peripheral\":\"USART3\",\"remap\":false},{\"name\":\"TIM1_BKIN\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PB13",
+      "port": "B",
+      "number": 13,
+      "lqfp48": 26,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB13",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI2_SCK\",\"peripheral\":\"SPI2\",\"remap\":false},{\"name\":\"USART3_CTS\",\"peripheral\":\"USART3\",\"remap\":false},{\"name\":\"TIM1_CH1N\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PB14",
+      "port": "B",
+      "number": 14,
+      "lqfp48": 27,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB14",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI2_MISO\",\"peripheral\":\"SPI2\",\"remap\":false},{\"name\":\"USART3_RTS\",\"peripheral\":\"USART3\",\"remap\":false},{\"name\":\"TIM1_CH2N\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PB15",
+      "port": "B",
+      "number": 15,
+      "lqfp48": 28,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB15",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"SPI2_MOSI\",\"peripheral\":\"SPI2\",\"remap\":false},{\"name\":\"TIM1_CH3N\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA8",
+      "port": "A",
+      "number": 8,
+      "lqfp48": 29,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PA8",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART1_CK\",\"peripheral\":\"USART1\",\"remap\":false},{\"name\":\"TIM1_CH1\",\"peripheral\":\"TIM1\",\"remap\":false},{\"name\":\"MCO\",\"peripheral\":\"SYSTEM\",\"remap\":false}]",
+      "notes": "MCO (Microcontroller Clock Output) can output various internal clocks for external use."
+    },
+    {
+      "pin": "PA9",
+      "port": "A",
+      "number": 9,
+      "lqfp48": 30,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PA9",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART1_TX\",\"peripheral\":\"USART1\",\"remap\":false},{\"name\":\"TIM1_CH2\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA10",
+      "port": "A",
+      "number": 10,
+      "lqfp48": 31,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PA10",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART1_RX\",\"peripheral\":\"USART1\",\"remap\":false},{\"name\":\"TIM1_CH3\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": ""
+    },
+    {
+      "pin": "PA11",
+      "port": "A",
+      "number": 11,
+      "lqfp48": 32,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PA11",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART1_CTS\",\"peripheral\":\"USART1\",\"remap\":false},{\"name\":\"CANRX\",\"peripheral\":\"CAN\",\"remap\":false},{\"name\":\"USBDM\",\"peripheral\":\"USB\",\"remap\":false},{\"name\":\"TIM1_CH4\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": "USB D- line. CAN default RX and USB share this pin."
+    },
+    {
+      "pin": "PA12",
+      "port": "A",
+      "number": 12,
+      "lqfp48": 33,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PA12",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"USART1_RTS\",\"peripheral\":\"USART1\",\"remap\":false},{\"name\":\"CANTX\",\"peripheral\":\"CAN\",\"remap\":false},{\"name\":\"USBDP\",\"peripheral\":\"USB\",\"remap\":false},{\"name\":\"TIM1_ETR\",\"peripheral\":\"TIM1\",\"remap\":false}]",
+      "notes": "USB D+ line. CAN default TX and USB share this pin."
+    },
+    {
+      "pin": "PA13",
+      "port": "A",
+      "number": 13,
+      "lqfp48": 34,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "JTMS-SWDIO",
+      "functions": "[{\"name\":\"JTMS\",\"peripheral\":\"JTAG\",\"remap\":false},{\"name\":\"SWDIO\",\"peripheral\":\"SWD\",\"remap\":false},{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":true}]",
+      "notes": "Debug pin. Default function is JTMS/SWDIO. GPIO requires disabling debug interface via software."
+    },
+    {
+      "pin": "VSS_2",
+      "port": "",
+      "number": null,
+      "lqfp48": 35,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Digital ground"
+    },
+    {
+      "pin": "VDD_2",
+      "port": "",
+      "number": null,
+      "lqfp48": 36,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Digital power supply (2.0V to 3.6V)"
+    },
+    {
+      "pin": "PA14",
+      "port": "A",
+      "number": 14,
+      "lqfp48": 37,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "JTCK-SWCLK",
+      "functions": "[{\"name\":\"JTCK\",\"peripheral\":\"JTAG\",\"remap\":false},{\"name\":\"SWCLK\",\"peripheral\":\"SWD\",\"remap\":false},{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":true}]",
+      "notes": "Debug pin. Default function is JTCK/SWCLK. GPIO requires disabling debug interface via software."
+    },
+    {
+      "pin": "PA15",
+      "port": "A",
+      "number": 15,
+      "lqfp48": 38,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "JTDI",
+      "functions": "[{\"name\":\"JTDI\",\"peripheral\":\"JTAG\",\"remap\":false},{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":true},{\"name\":\"TIM2_CH1_ETR\",\"peripheral\":\"TIM2\",\"remap\":true},{\"name\":\"SPI1_NSS\",\"peripheral\":\"SPI1\",\"remap\":true}]",
+      "notes": "JTAG pin. Disabling JTAG (SWD-only mode) frees this pin for GPIO/SPI1_NSS/TIM2."
+    },
+    {
+      "pin": "PB3",
+      "port": "B",
+      "number": 3,
+      "lqfp48": 39,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "JTDO",
+      "functions": "[{\"name\":\"JTDO\",\"peripheral\":\"JTAG\",\"remap\":false},{\"name\":\"TRACESWO\",\"peripheral\":\"DEBUG\",\"remap\":false},{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":true},{\"name\":\"TIM2_CH2\",\"peripheral\":\"TIM2\",\"remap\":true},{\"name\":\"SPI1_SCK\",\"peripheral\":\"SPI1\",\"remap\":true}]",
+      "notes": "JTAG pin. Disabling JTAG (SWD-only mode) frees this pin for GPIO/SPI1_SCK/TIM2."
+    },
+    {
+      "pin": "PB4",
+      "port": "B",
+      "number": 4,
+      "lqfp48": 40,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "JNTRST",
+      "functions": "[{\"name\":\"JNTRST\",\"peripheral\":\"JTAG\",\"remap\":false},{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":true},{\"name\":\"TIM3_CH1\",\"peripheral\":\"TIM3\",\"remap\":true},{\"name\":\"SPI1_MISO\",\"peripheral\":\"SPI1\",\"remap\":true}]",
+      "notes": "JTAG reset pin. Disabling JTAG (SWD-only mode) frees this pin for GPIO/SPI1_MISO/TIM3."
+    },
+    {
+      "pin": "PB5",
+      "port": "B",
+      "number": 5,
+      "lqfp48": 41,
+      "type": "I/O",
+      "five_tolerant": 0,
+      "reset_state": "PB5",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"I2C1_SMBA\",\"peripheral\":\"I2C1\",\"remap\":false},{\"name\":\"TIM3_CH2\",\"peripheral\":\"TIM3\",\"remap\":true},{\"name\":\"SPI1_MOSI\",\"peripheral\":\"SPI1\",\"remap\":true}]",
+      "notes": "NOT 5V tolerant (exception among Port B pins)."
+    },
+    {
+      "pin": "PB6",
+      "port": "B",
+      "number": 6,
+      "lqfp48": 42,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB6",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"I2C1_SCL\",\"peripheral\":\"I2C1\",\"remap\":false},{\"name\":\"TIM4_CH1\",\"peripheral\":\"TIM4\",\"remap\":false},{\"name\":\"USART1_TX\",\"peripheral\":\"USART1\",\"remap\":true}]",
+      "notes": "I2C requires external pull-up resistors (typically 4.7K to 10K ohms)."
+    },
+    {
+      "pin": "PB7",
+      "port": "B",
+      "number": 7,
+      "lqfp48": 43,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB7",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"I2C1_SDA\",\"peripheral\":\"I2C1\",\"remap\":false},{\"name\":\"TIM4_CH2\",\"peripheral\":\"TIM4\",\"remap\":false},{\"name\":\"USART1_RX\",\"peripheral\":\"USART1\",\"remap\":true}]",
+      "notes": "I2C requires external pull-up resistors (typically 4.7K to 10K ohms)."
+    },
+    {
+      "pin": "BOOT0",
+      "port": "",
+      "number": null,
+      "lqfp48": 44,
+      "type": "I",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Boot mode selection input. Sampled at reset. LOW=boot from main Flash, HIGH=boot from System Memory (bootloader) or SRAM depending on BOOT1 (PB2)."
+    },
+    {
+      "pin": "PB8",
+      "port": "B",
+      "number": 8,
+      "lqfp48": 45,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB8",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"TIM4_CH3\",\"peripheral\":\"TIM4\",\"remap\":false},{\"name\":\"I2C1_SCL\",\"peripheral\":\"I2C1\",\"remap\":true},{\"name\":\"CANRX\",\"peripheral\":\"CAN\",\"remap\":true}]",
+      "notes": "Alternate I2C1_SCL and CAN_RX location (remap required)."
+    },
+    {
+      "pin": "PB9",
+      "port": "B",
+      "number": 9,
+      "lqfp48": 46,
+      "type": "I/O",
+      "five_tolerant": 1,
+      "reset_state": "PB9",
+      "functions": "[{\"name\":\"GPIO\",\"peripheral\":null,\"remap\":false},{\"name\":\"TIM4_CH4\",\"peripheral\":\"TIM4\",\"remap\":false},{\"name\":\"I2C1_SDA\",\"peripheral\":\"I2C1\",\"remap\":true},{\"name\":\"CANTX\",\"peripheral\":\"CAN\",\"remap\":true}]",
+      "notes": "Alternate I2C1_SDA and CAN_TX location (remap required)."
+    },
+    {
+      "pin": "VSS_3",
+      "port": "",
+      "number": null,
+      "lqfp48": 47,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Digital ground"
+    },
+    {
+      "pin": "VDD_3",
+      "port": "",
+      "number": null,
+      "lqfp48": 48,
+      "type": "S",
+      "five_tolerant": 0,
+      "reset_state": "",
+      "functions": "[]",
+      "notes": "Digital power supply (2.0V to 3.6V)"
+    }
+  ]
+}

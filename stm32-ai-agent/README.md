@@ -7,12 +7,12 @@ An intelligent chatbot assistant for the STM32F103C8T6 microcontroller (Blue Pil
 ### Core Capabilities
 - **AI-Powered Assistance**: Uses Cloudflare Workers AI (Llama 3.1 8B) with RAG for accurate STM32F103C8T6 guidance
 - **Pin Allocation Tracking**: Automatically tracks which pins are allocated to which devices across your session
-- **Device Pattern Database**: Reference database of 15+ common devices with default pin configurations
+- **Device Pattern Database**: Reference database of 25 common devices/modules with default pin configurations
 - **Conversation Memory**: Maintains conversation history for contextual follow-up questions
 - **Session Management**: Persistent sessions with localStorage for seamless user experience
 
 ### Smart Features
-- **RAG-Enhanced Responses**: Searches pin database, knowledge base, and device patterns for accurate information
+- **Semantic Search (RAG)**: Vector-based search via Cloudflare Vectorize finds relevant knowledge even without exact keyword matches
 - **Function Calling**: Structured pin allocation using AI tool calls for reliability
 - **Hardware Confirmation**: Asks for clarification before assuming specific breakout boards
 - **Informational Question Detection**: Distinguishes between questions and connection requests
@@ -33,11 +33,93 @@ An intelligent chatbot assistant for the STM32F103C8T6 microcontroller (Blue Pil
 - **Styling**: Custom CSS with dark theme
 - **State Management**: React hooks + localStorage
 
+## Knowledge Database
+
+The core of this project is a hand-curated, datasheet-verified knowledge base stored in Cloudflare D1. Every fact has been cross-referenced against the official STM32F103C8T6 datasheet (DS5319 Rev 20) and reference manual. The database powers the AI's RAG pipeline via **Cloudflare Vectorize** for semantic search — so asking about a "gyroscope" finds MPU6050 results even without an exact keyword match.
+
+**Database totals: 76 knowledge entries | 25 device patterns | 48 pin definitions**
+
+### Knowledge Base (76 entries across 18 topics)
+
+| Topic | Entries | What's Covered |
+|---|---|---|
+| **Sensors & Modules** | 14 | IMUs (MPU6050, MPU9250, ICM-20948, BNO055...), environmental sensors (BMP280, BME680, DHT22, SHT31...), distance sensors (HC-SR04, VL53L0X, Sharp IR), current sensors (INA219, ACS712), cameras (OV7670, ArduCAM), wireless (NRF24L01, ESP8266, HC-05, LoRa), displays (SSD1306, ILI9341, HD44780), EEPROM/flash storage, RTC modules, motor drivers (L298N, DRV8833, A4988, TMC2209) |
+| **GPIO** | 9 | 5V tolerance map, current limits, output patterns (LEDs, relays, MOSFETs), input patterns (buttons, debouncing, interrupts), voltage level shifting, pin remapping (AFIO), JTAG/SWD pin release, one-wire protocols |
+| **Timers** | 5 | TIM1-TIM4 channel mappings, PWM generation, input capture, TIM1 advanced features (complementary outputs, dead-time, break input), servo/motor/ESC control |
+| **ADC** | 5 | 10 external channels (PA0-PA7, PB0-PB1), 12-bit resolution, clock configuration, analog sensor wiring, DAC alternatives (MCP4725, PWM+RC filter) |
+| **I2C** | 4 | I2C1/I2C2 pin assignments, remapping, pull-up resistor sizing, generic connection guide with common device addresses |
+| **SPI** | 4 | SPI1/SPI2 pins, 18MHz max clock, remap to JTAG pins, generic connection guide |
+| **USART** | 4 | USART1-3 pins, baud rates, TX/RX crossover, 5V level shifting, generic connection guide |
+| **Interrupts** | 3 | NVIC priority system, EXTI (external interrupts), practical ISR patterns |
+| **Power** | 3 | Supply requirements, low-power modes, external power guide (batteries, motor supplies, regulator budgets) |
+| **DMA** | 2 | Channel-to-peripheral assignments, practical usage (ADC+DMA, UART+DMA, SPI+DMA) |
+| **CAN** | 2 | PA11/PA12 default, PB8/PB9 remap, transceiver wiring (SN65HVD230, MCP2551), USB conflict |
+| **USB** | 2 | PA11 D-/PA12 D+, CDC/HID/MSC classes, Blue Pill pull-up resistor issue, DFU bootloader |
+| **Watchdog** | 2 | IWDG and WWDG setup, timeout configuration, practical patterns |
+| **Clock** | 2 | HSE/HSI/PLL configuration, 72MHz system clock, bus clock dividers |
+| **Development** | 4 | SWD/JTAG programming, ST-Link wiring, project templates (data logger, motor control) |
+| **Other** | 6 | Chip overview, memory map, boot modes, bus architecture, pin conflicts, common mistakes |
+
+### Device Patterns (25 devices with default pin mappings)
+
+Every device includes default pin assignments, wiring requirements, and notes. The AI uses these to automatically allocate pins when you ask to connect a device.
+
+| Device | Type | Interface | Notes |
+|---|---|---|---|
+| MPU6050 | Gyroscope/Accelerometer | I2C | 0x68/0x69, 6-axis IMU |
+| BMP280 | Pressure/Temperature | I2C | 0x76/0x77 |
+| SSD1306 OLED | Display | I2C | 0x3C/0x3D, 0.96"/1.3" |
+| SSD1306 SPI OLED | Display | SPI | Faster than I2C variant |
+| ILI9341 | TFT Display (2.4"+) | SPI | 240x320 color, DMA-capable |
+| DS3231 | RTC | I2C | 0x68, +/-2ppm accuracy |
+| SD Card | Storage | SPI | SPI1, CS on PA4 |
+| nRF24L01 | Wireless Transceiver | SPI | 2.4GHz, 3.3V only |
+| HC-05 | Bluetooth | UART | 9600 baud default |
+| XBee | Wireless Module | UART | |
+| GPS Module | GPS Receiver | UART | 9600 baud |
+| INA219 | Current/Power Sensor | I2C | 0x40, 26V max |
+| ADS1115 | 16-bit External ADC | I2C | 0x48-0x4B |
+| VL53L0X | Time-of-Flight Distance | I2C | 0x29, laser, up to 2m |
+| HC-SR04 | Ultrasonic Distance | GPIO | 5V, needs voltage divider on ECHO |
+| DHT22 | Temperature/Humidity | GPIO | Single-wire, 10k pull-up |
+| WS2812B | Addressable LED Strip | GPIO | 5V, 60mA/LED at full white |
+| MCP4725 | DAC | I2C | 0x60, 12-bit (chip has no built-in DAC) |
+| PCA9685 | PWM/Servo Driver | I2C | 16 channels, 12-bit |
+| A4988 | Stepper Motor Driver | GPIO | STEP+DIR, up to 2A |
+| LED | Output | GPIO | 220-330 ohm resistor |
+| Button | Input | GPIO | Internal pull-up |
+| Relay Module | Output | GPIO | Active low |
+| Potentiometer | Analog Input | ADC | |
+| LDR | Light Sensor | ADC | Voltage divider |
+
+### Pin Reference (all 48 LQFP48 pins)
+
+Complete pin database parsed from the official datasheet, including:
+- All alternate functions per pin (GPIO, timer channels, SPI, I2C, USART, CAN, USB, ADC, JTAG/SWD)
+- 5V tolerance flags (PA8-PA15, PB2-PB4, PB6-PB15 are 5V tolerant; PA0-PA7, PB0-PB1, PB5, PC13-PC15 are NOT)
+- Remap configurations (which AFIO register bits to set)
+- Conflict notes (e.g., PB6/PB7 shared between I2C1 and TIM4)
+
+### Semantic Search (Cloudflare Vectorize)
+
+All 149 database rows are embedded as 768-dimensional vectors using `@cf/baai/bge-base-en-v1.5` and stored in a Cloudflare Vectorize index. This enables semantic search — the AI finds relevant knowledge even when the user's wording doesn't match exact keywords:
+
+| User asks about... | Finds... |
+|---|---|
+| "gyroscope" | MPU6050, ICM-20948, BMI160 entries |
+| "temperature sensor" | BMP280, DHT22, DS18B20, LM35 entries |
+| "motor speed control" | PWM guide, L298N, DRV8833, TIM1 advanced features |
+| "save data permanently" | EEPROM, SD card, internal flash entries |
+| "wireless communication" | NRF24L01, ESP8266, HC-05, LoRa entries |
+
+Falls back to keyword (`LIKE`) search if Vectorize is unavailable.
+
 ## Database Schema
 
-### Sessions Table
-Stores user sessions with pin allocations and conversation history.
+<details>
+<summary>Click to expand table schemas</summary>
 
+### Sessions Table
 ```sql
 CREATE TABLE sessions (
   session_id TEXT PRIMARY KEY,
@@ -50,8 +132,6 @@ CREATE TABLE sessions (
 ```
 
 ### Pins Table
-Reference data for all STM32F103C8T6 pins.
-
 ```sql
 CREATE TABLE pins (
   pin TEXT PRIMARY KEY,
@@ -67,8 +147,6 @@ CREATE TABLE pins (
 ```
 
 ### Knowledge Table
-Curated knowledge base about STM32F103C8T6 features.
-
 ```sql
 CREATE TABLE knowledge (
   id TEXT PRIMARY KEY,
@@ -79,8 +157,6 @@ CREATE TABLE knowledge (
 ```
 
 ### Device Patterns Table
-Reference patterns for common devices and sensors.
-
 ```sql
 CREATE TABLE device_patterns (
   id TEXT PRIMARY KEY,
@@ -94,7 +170,7 @@ CREATE TABLE device_patterns (
 );
 ```
 
-**Included Devices**: MPU6050, BMP280, OLED (I2C), DS3231 RTC, SD Card, nRF24L01, XBee, HC-05 Bluetooth, GPS, LED, Button, Relay, Potentiometer, LDR
+</details>
 
 ## Setup
 
@@ -115,16 +191,13 @@ npm install
 2. **Configure wrangler.toml**
 Update with your D1 database ID and account details.
 
-3. **Run migrations**
+3. **Run migrations** (apply all files in `migrations/` in order)
 ```bash
-npx wrangler d1 execute stm32-pins-db --local --file=./migrations/0001_create_sessions.sql
-npx wrangler d1 execute stm32-pins-db --local --file=./migrations/0002_add_conversation_history.sql
-npx wrangler d1 execute stm32-pins-db --local --file=./migrations/0003_create_device_patterns.sql
+# Local development
+for f in ./migrations/0*.sql; do npx wrangler d1 execute stm32-pins-db --local --file="$f"; done
 
-# For production
-npx wrangler d1 execute stm32-pins-db --remote --file=./migrations/0001_create_sessions.sql
-npx wrangler d1 execute stm32-pins-db --remote --file=./migrations/0002_add_conversation_history.sql
-npx wrangler d1 execute stm32-pins-db --remote --file=./migrations/0003_create_device_patterns.sql
+# Production
+for f in ./migrations/0*.sql; do npx wrangler d1 execute stm32-pins-db --remote --file="$f"; done
 ```
 
 4. **Deploy**
@@ -384,10 +457,7 @@ stm32-ai-agent/
 │   │   ├── sessions.ts          # Session creation, cleanup, parseJSON helper
 │   │   ├── search.ts            # RAG search (LIKE queries across pins/knowledge/devices)
 │   │   └── prompts.ts           # System prompt builder, sensor question detection
-│   ├── migrations/              # D1 database migrations
-│   │   ├── 0001_create_sessions.sql
-│   │   ├── 0002_add_conversation_history.sql
-│   │   └── 0003_create_device_patterns.sql
+│   ├── migrations/              # D1 database migrations (6 migrations)
 │   ├── wrangler.jsonc           # Worker configuration (D1, AI bindings)
 │   └── package.json
 │

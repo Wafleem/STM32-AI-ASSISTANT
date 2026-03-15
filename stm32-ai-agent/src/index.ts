@@ -224,8 +224,19 @@ app.post('/api/chat', async (c) => {
   // Add validated allocations
   for (const [pin, info] of Object.entries(validAllocations)) {
     const existing = updatedAllocations[pin];
-    if (!existing || existing.device !== info.device || existing.function !== info.function) {
+    if (!existing) {
       updatedAllocations[pin] = info;
+    } else if (existing.device !== info.device) {
+      // I2C bus sharing: combine device names (e.g., "MPU6050, BMP280")
+      const existingDevices = existing.device ? existing.device.split(', ') : [];
+      const newDevice = info.device || '';
+      if (newDevice && !existingDevices.includes(newDevice)) {
+        existingDevices.push(newDevice);
+        updatedAllocations[pin] = {
+          ...existing,
+          device: existingDevices.join(', ')
+        };
+      }
     }
   }
 
@@ -317,6 +328,24 @@ function normalizePin(raw: string): string | null {
 function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): PinAllocation {
   const allocations: PinAllocation = {};
 
+  // Guard: informational questions should NEVER create allocations,
+  // even if the LLM mistakenly includes a PIN_ALLOCATIONS block
+  const informationalPatterns = [
+    /which pins|what pins|list.*pins/i,
+    /can i use|could i use/i,
+    /are.*5v tolerant|5v.*tolerant/i,
+    /available|options/i,
+    /does (this|the|it) (chip|board|stm32) (have|support)/i,
+    /how many/i,
+    /tell me about/i,
+    /what (is|are) the/i,
+  ];
+
+  const isInformational = informationalPatterns.some(pattern => pattern.test(userMsg));
+  if (isInformational) {
+    return allocations;
+  }
+
   // PRIORITY 1: Check for tool calls (most reliable)
   if (aiResponse.tool_calls && Array.isArray(aiResponse.tool_calls)) {
     for (const toolCall of aiResponse.tool_calls) {
@@ -389,19 +418,6 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
   }
 
   // Fallback: Only allocate if we have strong evidence of device connection
-  const informationalPatterns = [
-    /which pins|what pins|list.*pins/i,
-    /can i use|could i use/i,
-    /are.*5v tolerant|5v.*tolerant/i,
-    /available|options/i
-  ];
-
-  const isInformational = informationalPatterns.some(pattern => userMsg.match(pattern));
-
-  if (isInformational) {
-    return allocations;
-  }
-
   const devicePattern = /\b([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|Button|Switch|Motor|Relay)\b/gi;
   const devices = userMsg.match(devicePattern);
 

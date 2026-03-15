@@ -185,6 +185,24 @@ header p {
   font-weight: 600;
 }
 
+/* Error toast */
+.error-toast {
+  background: #fee;
+  color: #c00;
+  border: 1px solid #fcc;
+  padding: 8px 16px;
+  margin: 0 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .input-container {
   padding: 20px;
   border-top: 1px solid #e5e5e5;

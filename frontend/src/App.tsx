@@ -35,7 +35,13 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [pinAllocations, setPinAllocations] = useState<PinAllocations>({})
+  const [errorToast, setErrorToast] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const showError = (msg: string) => {
+    setErrorToast(msg)
+    setTimeout(() => setErrorToast(null), 4000)
+  }
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -51,8 +57,8 @@ function App() {
           const data = await response.json()
           setPinAllocations(data.allocations || {})
         }
-      } catch (error) {
-        console.error('Failed to fetch session allocations:', error)
+      } catch {
+        showError('Could not restore previous session. Starting fresh.')
       }
     }
 
@@ -153,18 +159,16 @@ function App() {
       })
 
       if (!response.ok) {
-        // Rollback on error
         setPinAllocations(previousAllocations)
-        console.error('Failed to remove pin')
+        showError(`Failed to remove ${pin}`)
         return
       }
 
       const data = await response.json()
       setPinAllocations(data.allocations)
-    } catch (error) {
-      // Rollback on error
+    } catch {
       setPinAllocations(previousAllocations)
-      console.error('Failed to remove pin:', error)
+      showError(`Failed to remove ${pin} — check your connection`)
     }
   }
 
@@ -233,7 +237,7 @@ function App() {
           </div>
         )}
 
-        <div className="chat-container">
+        <div className="chat-container" aria-live="polite">
         {messages.length === 0 && (
           <div className="welcome">
             <p>Try asking:</p>
@@ -298,6 +302,10 @@ function App() {
         <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {errorToast && (
+        <div className="error-toast" role="alert">{errorToast}</div>
+      )}
 
       <div className="input-container">
         <input

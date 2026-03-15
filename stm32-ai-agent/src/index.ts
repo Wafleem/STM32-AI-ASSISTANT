@@ -24,6 +24,22 @@ app.use('/*', async (c, next) => {
   }
 });
 
+// Health check — verifies DB connectivity
+app.get('/api/health', async (c) => {
+  const start = Date.now();
+  try {
+    await c.env.DB.prepare('SELECT 1').first();
+    return c.json({
+      status: 'ok',
+      db: 'connected',
+      latency_ms: Date.now() - start,
+      version: '1.0.0'
+    });
+  } catch {
+    return c.json({ status: 'error', db: 'unreachable' }, 500);
+  }
+});
+
 // Seed vectors endpoint (one-time, call after deploy to populate Vectorize)
 app.post('/api/admin/seed-vectors', handleSeedVectors);
 
@@ -418,6 +434,27 @@ app.get('/api/session/:sessionId', async (c) => {
 app.put('/api/session/:sessionId/allocations', async (c) => {
   const sessionId = c.req.param('sessionId');
   const { allocations } = await c.req.json();
+
+  if (!allocations || typeof allocations !== 'object' || Array.isArray(allocations)) {
+    return c.json({ error: 'allocations must be an object' }, 400);
+  }
+
+  const PIN_FORMAT = /^P[A-C]\d{1,2}$/;
+  for (const [pin, info] of Object.entries(allocations)) {
+    if (!PIN_FORMAT.test(pin)) {
+      return c.json({ error: `Invalid pin format: "${pin}". Expected PA0, PB6, etc.` }, 400);
+    }
+    const val = info as Record<string, unknown>;
+    if (!val || typeof val !== 'object' || typeof val.function !== 'string') {
+      return c.json({ error: `Allocation for ${pin} must include a "function" string` }, 400);
+    }
+    if (val.device !== undefined && typeof val.device !== 'string') {
+      return c.json({ error: `"device" for ${pin} must be a string` }, 400);
+    }
+    if (val.notes !== undefined && typeof val.notes !== 'string') {
+      return c.json({ error: `"notes" for ${pin} must be a string` }, 400);
+    }
+  }
 
   const session = await c.env.DB.prepare('SELECT * FROM sessions WHERE session_id = ?').bind(sessionId).first();
 

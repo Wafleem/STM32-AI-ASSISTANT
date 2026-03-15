@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './App.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
@@ -278,7 +280,13 @@ function App() {
 
         {messages.map((msg) => (
           <div key={msg.id} className={`message ${msg.role}`}>
-            <div className="message-content">{msg.content}</div>
+            <div className="message-content">
+              {msg.role === 'assistant' ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              ) : (
+                msg.content
+              )}
+            </div>
           </div>
         ))}
 

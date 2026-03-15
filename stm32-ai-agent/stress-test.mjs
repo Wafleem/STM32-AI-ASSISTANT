@@ -1,21 +1,48 @@
 // Stress test for STM32 AI Agent — run with: node stress-test.mjs
 // Requires backend running at localhost:8787
 
-const API = process.env.API_URL || 'http://localhost:8787';
+import http from 'http';
+
+const HOST = '127.0.0.1';
+const PORT = 8787;
+
+function httpRequest(method, path, body = null) {
+  return new Promise((resolve, reject) => {
+    const opts = { hostname: HOST, port: PORT, path, method, headers: {} };
+    if (body) {
+      const payload = JSON.stringify(body);
+      opts.headers['Content-Type'] = 'application/json';
+      opts.headers['Content-Length'] = Buffer.byteLength(payload);
+    }
+    const req = http.request(opts, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
+        catch { resolve({ status: res.statusCode, body: data }); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(30000, () => { req.destroy(); reject(new Error('timeout')); });
+    if (body) req.write(JSON.stringify(body));
+    req.end();
+  });
+}
 
 async function chat(message, sessionId = null) {
   const body = { message };
   if (sessionId) body.sessionId = sessionId;
-  const res = await fetch(`${API}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    console.log(`  HTTP ${res.status}: ${await res.text()}`);
+  try {
+    const res = await httpRequest('POST', '/api/chat', body);
+    if (res.status !== 200) {
+      console.log(`  HTTP ${res.status}: ${JSON.stringify(res.body)}`);
+      return null;
+    }
+    return res.body;
+  } catch (e) {
+    console.log(`  ERROR: ${e.message}`);
     return null;
   }
-  return await res.json();
 }
 
 function showAllocations(data) {
@@ -73,13 +100,12 @@ async function scenario(name, steps) {
 
 async function main() {
   console.log('STM32 AI Agent Stress Test');
-  console.log(`Backend: ${API}`);
+  console.log(`Backend: http://${HOST}:${PORT}`);
 
   // Verify backend is up
   try {
-    const health = await fetch(`${API}/api/health`);
-    const h = await health.json();
-    console.log(`Health: ${h.status}, DB: ${h.db}`);
+    const health = await httpRequest('GET', '/api/health');
+    console.log(`Health: ${health.body.status}, DB: ${health.body.db}`);
   } catch (e) {
     console.log('ERROR: Backend not reachable. Start with: npx wrangler dev --remote');
     process.exit(1);

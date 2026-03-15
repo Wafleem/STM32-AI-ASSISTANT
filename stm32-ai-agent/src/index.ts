@@ -3,7 +3,7 @@ import { cors } from 'hono/cors';
 import { Bindings, PinAllocation, ConversationMessage, LLMResponse, ChatMessage, SessionRow, ToolCall } from './types';
 import { getOrCreateSession, cleanupOldSessions, parseJSON } from './sessions';
 import { performSearch } from './search';
-import { buildSystemPrompt, detectSensorQuestion } from './prompts';
+import { buildSystemPrompt } from './prompts';
 import { validateAllocations } from './validation';
 import { handleSeedVectors } from './seed-vectors';
 
@@ -12,7 +12,9 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use('/*', cors({
   origin: [
     'https://stm32-assistant.pages.dev',
+    'https://stm32-ai-agent-staging.wafleem.workers.dev',
     'http://localhost:5173',
+    'http://localhost:5174',
   ],
 }));
 
@@ -139,15 +141,12 @@ app.post('/api/chat', async (c) => {
   const currentAllocations: PinAllocation = parseJSON<PinAllocation>(session.pin_allocations, {});
   const conversationHistory: ConversationMessage[] = parseJSON<ConversationMessage[]>(session.conversation_history, []);
 
-  const isSensorQuestion = detectSensorQuestion(message);
-
   // Search for relevant pins, knowledge, and device patterns (vector search with LIKE fallback)
   const searchResults = await performSearch(c.env, message);
 
   // Build system prompt with context and session state
   const systemPrompt = buildSystemPrompt(
     currentAllocations,
-    isSensorQuestion,
     searchResults.pins,
     searchResults.knowledge,
     searchResults.devicePatterns
@@ -171,7 +170,7 @@ app.post('/api/chat', async (c) => {
   // Model name cast needed — @cf/meta/llama-3.1-8b-instruct isn't in Cloudflare's AiModels type yet
   const aiResult = await (c.env.AI.run as Function)('@cf/meta/llama-3.1-8b-instruct', {
     messages,
-    max_tokens: 800
+    max_tokens: 1024
   }) as LLMResponse;
 
   // Extract response text from various possible formats
@@ -256,8 +255,10 @@ app.post('/api/chat', async (c) => {
   ).run();
 
   // Remove structured allocation block from user-visible response
+  // LLM outputs varying formats: ---PIN_ALLOCATIONS---, PIN_ALLOCATIONS:, ---END_ALLOCATIONS---, ---END---, etc.
   let cleanResponse = (response.response || '')
-    .replace(/---PIN_ALLOCATIONS---[\s\S]*?---END_ALLOCATIONS---/g, '')
+    .replace(/[-—]*\s*PIN_ALLOCATIONS\s*[-—]*[\s\S]*?[-—]*\s*END[\s\S]{0,20}[-—]*/g, '')
+    .replace(/PIN_ALLOCATIONS\s*:?\s*[-—]*[\s\S]*$/g, '')
     .trim();
 
   // ========== SECURITY: Output Filtering ==========
@@ -277,22 +278,6 @@ app.post('/api/chat', async (c) => {
     cleanResponse = "I'm specifically designed to help with the STM32F103C8T6 microcontroller. I can answer questions about its pinout, peripherals, and how to connect devices to it. What would you like to know?";
   }
 
-  const hardwareTerms = ['i2c', 'spi', 'uart', 'gpio', 'sensor', 'module', 'breakout', 'board',
-                          'connect', 'wire', 'interface', 'peripheral', 'device', 'vcc', 'gnd',
-                          'scl', 'sda', 'mosi', 'miso', 'tx', 'rx', 'adc', 'pwm', 'timer'];
-  const responseContainsHardwareTerm = hardwareTerms.some(term =>
-    cleanResponse.toLowerCase().includes(term)
-  );
-
-  if (cleanResponse.length > 0 &&
-      !cleanResponse.toLowerCase().includes('stm32') &&
-      !cleanResponse.toLowerCase().includes('pin') &&
-      !cleanResponse.toLowerCase().includes('designed to help') &&
-      !responseContainsHardwareTerm &&
-      cleanResponse.length > 100) {
-    console.log('Suspicious off-topic response detected');
-    cleanResponse = "I'm specifically designed to help with the STM32F103C8T6 microcontroller. Please ask me questions about the chip, its pinout, or how to connect devices to it.";
-  }
   // ========== END SECURITY ==========
 
   // Append validation warnings to the response so the user sees them
@@ -385,9 +370,9 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
   // PRIORITY 2: Try to extract structured allocation block from text
   const text = aiResponse.response || '';
 
-  // Handle \r\n, optional whitespace around delimiters, and slight variations
+  // Handle varying LLM formats: ---PIN_ALLOCATIONS---, PIN_ALLOCATIONS:, ---END---, ---END_ALLOCATIONS---, etc.
   const structuredMatch = text.match(
-    /---\s*PIN_ALLOCATIONS\s*---\s*[\r\n]+([\s\S]*?)[\r\n]+\s*---\s*END_ALLOCATIONS\s*---/
+    /[-—]*\s*PIN_ALLOCATIONS\s*[-—:]*\s*[\r\n]+([\s\S]*?)[\r\n]+\s*[-—]*\s*END(?:_ALLOCATIONS)?\s*[-—]*/
   );
 
   if (structuredMatch) {
@@ -396,6 +381,32 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
 
     for (const line of lines) {
       // Accept both pipe and comma as field separators
+      const pinMatch = line.match(/PIN:\s*(P\s*[A-E]\s*\d{1,2})/i);
+      const functionMatch = line.match(/FUNCTION:\s*([^|,]+)/i);
+      const deviceMatch = line.match(/DEVICE:\s*([^|,]+)/i);
+      const notesMatch = line.match(/NOTES:\s*(.+)/i);
+
+      if (pinMatch) {
+        const pin = normalizePin(pinMatch[1]);
+        if (!pin) continue;
+        allocations[pin] = {
+          function: functionMatch ? functionMatch[1].trim() : 'GPIO',
+          device: deviceMatch ? deviceMatch[1].trim() : undefined,
+          notes: notesMatch ? notesMatch[1].trim() : undefined
+        };
+      }
+    }
+
+    if (Object.keys(allocations).length > 0) {
+      return allocations;
+    }
+  }
+
+  // Fallback: allocation block started but END tag is missing (response truncated)
+  const truncatedMatch = text.match(/[-—]*\s*PIN_ALLOCATIONS\s*[-—:]*\s*[\r\n]+([\s\S]*)$/);
+  if (truncatedMatch) {
+    const lines = truncatedMatch[1].split(/\r?\n/).filter((line: string) => line.trim());
+    for (const line of lines) {
       const pinMatch = line.match(/PIN:\s*(P\s*[A-E]\s*\d{1,2})/i);
       const functionMatch = line.match(/FUNCTION:\s*([^|,]+)/i);
       const deviceMatch = line.match(/DEVICE:\s*([^|,]+)/i);

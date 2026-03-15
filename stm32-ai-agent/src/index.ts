@@ -307,6 +307,13 @@ interface ParsedAIResponse {
   tool_calls: ToolCall[];
 }
 
+// Normalize pin strings: "PA 0" → "PA0", "p b 6" → "PB6", "Pa5" → "PA5"
+function normalizePin(raw: string): string | null {
+  const cleaned = raw.toUpperCase().replace(/[\s_-]/g, '');
+  const match = cleaned.match(/^(P[A-E])(\d{1,2})$/);
+  return match ? `${match[1]}${match[2]}` : null;
+}
+
 function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): PinAllocation {
   const allocations: PinAllocation = {};
 
@@ -326,7 +333,8 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
 
           if (allocationsList && Array.isArray(allocationsList)) {
             for (const allocation of allocationsList) {
-              const pin = allocation.pin.toUpperCase();
+              const pin = normalizePin(allocation.pin);
+              if (!pin) continue;
               allocations[pin] = {
                 function: allocation.function,
                 device: allocation.device,
@@ -347,20 +355,26 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
 
   // PRIORITY 2: Try to extract structured allocation block from text
   const text = aiResponse.response || '';
-  const structuredMatch = text.match(/---PIN_ALLOCATIONS---\n([\s\S]*?)\n---END_ALLOCATIONS---/);
+
+  // Handle \r\n, optional whitespace around delimiters, and slight variations
+  const structuredMatch = text.match(
+    /---\s*PIN_ALLOCATIONS\s*---\s*[\r\n]+([\s\S]*?)[\r\n]+\s*---\s*END_ALLOCATIONS\s*---/
+  );
 
   if (structuredMatch) {
     const allocationBlock = structuredMatch[1];
-    const lines = allocationBlock.split('\n').filter((line: string) => line.trim());
+    const lines = allocationBlock.split(/\r?\n/).filter((line: string) => line.trim());
 
     for (const line of lines) {
-      const pinMatch = line.match(/PIN:\s*([A-Z]{2}\d{1,2})/i);
-      const functionMatch = line.match(/FUNCTION:\s*([^|]+)/i);
-      const deviceMatch = line.match(/DEVICE:\s*([^|]+)/i);
+      // Accept both pipe and comma as field separators
+      const pinMatch = line.match(/PIN:\s*(P\s*[A-E]\s*\d{1,2})/i);
+      const functionMatch = line.match(/FUNCTION:\s*([^|,]+)/i);
+      const deviceMatch = line.match(/DEVICE:\s*([^|,]+)/i);
       const notesMatch = line.match(/NOTES:\s*(.+)/i);
 
       if (pinMatch) {
-        const pin = pinMatch[1].toUpperCase();
+        const pin = normalizePin(pinMatch[1]);
+        if (!pin) continue;
         allocations[pin] = {
           function: functionMatch ? functionMatch[1].trim() : 'GPIO',
           device: deviceMatch ? deviceMatch[1].trim() : undefined,
@@ -369,7 +383,9 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
       }
     }
 
-    return allocations;
+    if (Object.keys(allocations).length > 0) {
+      return allocations;
+    }
   }
 
   // Fallback: Only allocate if we have strong evidence of device connection
@@ -393,12 +409,14 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
     return allocations;
   }
 
-  const connectionPattern = /connect\s+(?:the\s+)?([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|sensor|module)\s+(?:to\s+)?([A-Z]{2}\d{1,2})/gi;
+  // Match various connection verbs: connect, wire, hook up, attach, use, assign
+  const connectionPattern = /(?:connect|wire|hook\s*up|attach|use|assign)\s+(?:the\s+)?([A-Z]{2,}[-]?\d{2,}[A-Z]?\d*|LED|sensor|module)\s+(?:to|on|at)\s+(?:pin\s+)?(P\s*[A-E]\s*\d{1,2})/gi;
   const matches = text.matchAll(connectionPattern);
 
   for (const match of matches) {
     const device = match[1];
-    const pin = match[2].toUpperCase();
+    const pin = normalizePin(match[2]);
+    if (!pin) continue;
 
     if (!allocations[pin]) {
       allocations[pin] = {

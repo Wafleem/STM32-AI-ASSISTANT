@@ -1,4 +1,4 @@
-import { Bindings, PinRow, KnowledgeRow, DevicePatternRow } from './types';
+import { Bindings, PinRow, KnowledgeRow, DevicePatternRow, EmbeddingResponse, VectorMetadata } from './types';
 
 export interface SearchResults {
   pins: PinRow[];
@@ -13,7 +13,7 @@ async function vectorSearch(
   db: D1Database,
   message: string
 ): Promise<SearchResults> {
-  const embedding = await ai.run('@cf/baai/bge-base-en-v1.5' as any, { text: [message] }) as any;
+  const embedding = await ai.run('@cf/baai/bge-base-en-v1.5', { text: [message] }) as EmbeddingResponse;
   const vectorResults = await vectorize.query(embedding.data[0], { topK: 15, returnMetadata: 'all' });
 
   const knowledgeIds: string[] = [];
@@ -21,7 +21,7 @@ async function vectorSearch(
   const pinNames: string[] = [];
 
   for (const match of vectorResults.matches) {
-    const meta = match.metadata as any;
+    const meta = match.metadata as VectorMetadata | undefined;
     if (!meta) continue;
     if (meta.table === 'knowledge') knowledgeIds.push(meta.id);
     else if (meta.table === 'device_patterns') deviceIds.push(meta.id);

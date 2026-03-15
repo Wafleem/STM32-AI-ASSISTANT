@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { Bindings, KnowledgeRow, DevicePatternRow, PinRow } from './types';
+import { Bindings, KnowledgeRow, DevicePatternRow, PinRow, EmbeddingResponse } from './types';
 
 export async function handleSeedVectors(c: Context<{ Bindings: Bindings }>) {
   const db = c.env.DB;
@@ -43,7 +43,7 @@ export async function handleSeedVectors(c: Context<{ Bindings: Bindings }>) {
     const batchIds = ids.slice(i, i + batchSize);
     const batchMeta = metadatas.slice(i, i + batchSize);
 
-    const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5' as any, { text: batchTexts }) as any;
+    const embeddingResult = await ai.run('@cf/baai/bge-base-en-v1.5', { text: batchTexts }) as EmbeddingResponse;
 
     const vectors = embeddingResult.data.map((embedding: number[], idx: number) => ({
       id: batchIds[idx],

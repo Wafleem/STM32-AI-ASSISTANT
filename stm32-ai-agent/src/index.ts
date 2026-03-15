@@ -1,14 +1,20 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { Bindings, PinAllocation, ConversationMessage } from './types';
+import { Bindings, PinAllocation, ConversationMessage, LLMResponse, ChatMessage, SessionRow, ToolCall } from './types';
 import { getOrCreateSession, cleanupOldSessions, parseJSON } from './sessions';
 import { performSearch } from './search';
 import { buildSystemPrompt, detectSensorQuestion } from './prompts';
+import { validateAllocations } from './validation';
 import { handleSeedVectors } from './seed-vectors';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-app.use('/*', cors());
+app.use('/*', cors({
+  origin: [
+    'https://stm32-assistant.pages.dev',
+    'http://localhost:5173',
+  ],
+}));
 
 // Automatic session cleanup middleware (runs probabilistically)
 app.use('/*', async (c, next) => {
@@ -132,7 +138,7 @@ app.post('/api/chat', async (c) => {
   );
 
   // Build messages array with conversation history
-  const messages: any[] = [
+  const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt }
   ];
 
@@ -146,10 +152,11 @@ app.post('/api/chat', async (c) => {
   messages.push({ role: 'user', content: message });
 
   // Call Workers AI
-  const aiResult = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct' as any, {
+  // Model name cast needed — @cf/meta/llama-3.1-8b-instruct isn't in Cloudflare's AiModels type yet
+  const aiResult = await (c.env.AI.run as Function)('@cf/meta/llama-3.1-8b-instruct', {
     messages,
     max_tokens: 800
-  }) as any;
+  }) as LLMResponse;
 
   // Extract response text from various possible formats
   let responseText = aiResult?.response || aiResult?.content || aiResult?.message?.content || '';
@@ -167,14 +174,21 @@ app.post('/api/chat', async (c) => {
   const newAllocations = extractPinAllocations(response, message);
   const updatedAllocations = { ...currentAllocations };
 
+  // Validate proposed allocations against the real pin database
+  const { validAllocations, warnings } = await validateAllocations(c.env.DB, newAllocations, currentAllocations);
+
+  if (warnings.length > 0) {
+    console.log('Allocation validation warnings:', warnings);
+  }
+
   // Check if this is a reassignment (same device, different pins)
-  const newDevices = new Set(Object.values(newAllocations).map(info => info.device).filter(d => d));
+  const newDevices = new Set(Object.values(validAllocations).map(info => info.device).filter(d => d));
 
   for (const device of newDevices) {
     const oldPins = Object.entries(currentAllocations)
       .filter(([_, info]) => info.device === device)
       .map(([pin, _]) => pin);
-    const newPins = Object.entries(newAllocations)
+    const newPins = Object.entries(validAllocations)
       .filter(([_, info]) => info.device === device)
       .map(([pin, _]) => pin);
 
@@ -191,8 +205,8 @@ app.post('/api/chat', async (c) => {
     }
   }
 
-  // Add new allocations
-  for (const [pin, info] of Object.entries(newAllocations)) {
+  // Add validated allocations
+  for (const [pin, info] of Object.entries(validAllocations)) {
     const existing = updatedAllocations[pin];
     if (!existing || existing.device !== info.device || existing.function !== info.function) {
       updatedAllocations[pin] = info;
@@ -254,6 +268,12 @@ app.post('/api/chat', async (c) => {
   }
   // ========== END SECURITY ==========
 
+  // Append validation warnings to the response so the user sees them
+  if (warnings.length > 0) {
+    const warningText = '\n\n⚠️ **Pin Validation:**\n' + warnings.map(w => `- ${w}`).join('\n');
+    cleanResponse += warningText;
+  }
+
   return c.json({
     response: cleanResponse,
     sessionId: session.session_id,
@@ -266,7 +286,12 @@ app.post('/api/chat', async (c) => {
 });
 
 // ========== Pin allocation extraction ==========
-function extractPinAllocations(aiResponse: any, userMsg: string): PinAllocation {
+interface ParsedAIResponse {
+  response: string;
+  tool_calls: ToolCall[];
+}
+
+function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): PinAllocation {
   const allocations: PinAllocation = {};
 
   // PRIORITY 1: Check for tool calls (most reliable)
@@ -374,7 +399,7 @@ function extractPinAllocations(aiResponse: any, userMsg: string): PinAllocation 
 // Get session allocations
 app.get('/api/session/:sessionId', async (c) => {
   const sessionId = c.req.param('sessionId');
-  const session = await c.env.DB.prepare('SELECT * FROM sessions WHERE session_id = ?').bind(sessionId).first<any>();
+  const session = await c.env.DB.prepare('SELECT * FROM sessions WHERE session_id = ?').bind(sessionId).first<SessionRow>();
 
   if (!session) {
     return c.json({ error: 'Session not found' }, 404);
@@ -419,7 +444,7 @@ app.delete('/api/session/:sessionId/allocations/:pin', async (c) => {
     return c.json({ error: 'Invalid pin format. Expected format: PA0, PB6, etc.' }, 400);
   }
 
-  const session = await c.env.DB.prepare('SELECT * FROM sessions WHERE session_id = ?').bind(sessionId).first<any>();
+  const session = await c.env.DB.prepare('SELECT * FROM sessions WHERE session_id = ?').bind(sessionId).first<SessionRow>();
 
   if (!session) {
     return c.json({ error: 'Session not found' }, 404);

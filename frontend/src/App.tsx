@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
+
 interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -42,7 +44,7 @@ function App() {
   useEffect(() => {
     const fetchSessionAllocations = async (sid: string) => {
       try {
-        const response = await fetch(`https://stm32-ai-agent.wafleem.workers.dev/api/session/${sid}`)
+        const response = await fetch(`${API_BASE}/api/session/${sid}`)
         if (response.ok) {
           const data = await response.json()
           setPinAllocations(data.allocations || {})
@@ -73,7 +75,7 @@ function App() {
     setLoading(true)
 
     try {
-      const response = await fetch('https://stm32-ai-agent.wafleem.workers.dev/api/chat', {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,7 +146,7 @@ function App() {
     })
 
     try {
-      const response = await fetch(`https://stm32-ai-agent.wafleem.workers.dev/api/session/${sessionId}/allocations/${pin}`, {
+      const response = await fetch(`${API_BASE}/api/session/${sessionId}/allocations/${pin}`, {
         method: 'DELETE'
       })
 

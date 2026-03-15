@@ -58,5 +58,32 @@ export interface PinAllocation {
 
 export interface SessionMetadata {
   user_agent?: string;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+// Cloudflare Workers AI response types
+export interface ToolCall {
+  name: string;
+  arguments: string | Record<string, unknown>;
+}
+
+export interface LLMResponse {
+  response?: string;
+  content?: string;
+  message?: { content: string };
+  tool_calls?: ToolCall[];
+}
+
+export interface EmbeddingResponse {
+  data: number[][];
+}
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface VectorMetadata {
+  table: string;
+  id: string;
 }

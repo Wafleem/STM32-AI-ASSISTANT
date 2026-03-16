@@ -1,6 +1,14 @@
 # STM32 AI Agent
 
-Full-stack application for STM32 AI assistance with a React frontend and Cloudflare Workers backend.
+An AI-powered wiring assistant for the STM32F103C8T6 (Blue Pill). Ask it to connect a sensor, motor driver, or display — it returns a validated pin assignment, wiring steps, and HAL code snippet.
+
+**Why this exists:** In hardware, bad wiring doesn't throw an error — it fries chips and creates bugs you chase with a multimeter. This tool gives engineers a faster path from "I need to add a CAN transceiver" to a working configuration, backed by verified data.
+
+**Key features:**
+- **RAG with semantic search** — vectorized knowledge base matches queries by meaning, not just keywords
+- **Live pin allocation tracking** — prevents conflicts across devices in the same session
+- **Verified knowledge base** — every wiring pattern and pin mapping sourced from datasheets
+- **Llama 3.3 70B** on Cloudflare Workers AI for high-quality reasoning at zero cost
 
 ## Project Structure
 
@@ -18,8 +26,10 @@ stm32-ai-agent/
 │   │   ├── index.ts           # Routes + wiring
 │   │   ├── types.ts           # Shared TypeScript interfaces
 │   │   ├── sessions.ts        # Session creation, cleanup, JSON helpers
-│   │   ├── search.ts          # RAG search (LIKE queries across 3 tables)
-│   │   └── prompts.ts         # System prompt builder, sensor detection
+│   │   ├── search.ts          # RAG search (semantic + LIKE fallback)
+│   │   ├── seed-vectors.ts    # Vector embedding seeder
+│   │   ├── validation.ts      # Input validation for API boundaries
+│   │   └── prompts.ts         # System prompt builder
 │   ├── migrations/            # D1 database migrations
 │   │   ├── 0001_create_sessions.sql
 │   │   ├── 0002_add_conversation_history.sql
@@ -125,7 +135,8 @@ npm run test:backend
 - Cloudflare Workers
 - Vitest (Testing)
 - TypeScript
-- SQL based D1 Database (Database with datasheet and reference manual info)
+- Cloudflare D1 + Vectorize (structured data + semantic search)
+- Workers AI (Llama 3.3 70B)
 
 ## License
 

@@ -1,5 +1,5 @@
 # STM32 AI Agent
-
+https://stm32-assistant.pages.dev/
 An AI-powered wiring assistant for the STM32F103C8T6 (Blue Pill). Ask it to connect a sensor, motor driver, or display — it returns a validated pin assignment, wiring steps, and HAL code snippet.
 
 **Why this exists:** In hardware, bad wiring doesn't throw an error — it fries chips and creates bugs you chase with a multimeter. This tool gives engineers a faster path from "I need to add a CAN transceiver" to a working configuration, backed by verified data.

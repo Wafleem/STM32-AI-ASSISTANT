@@ -188,7 +188,7 @@ function App() {
     <div className="app">
       <header>
         <h1>STM32F103C8T6 Assistant</h1>
-        <p>I'll help you with questions about STM32F103C8T6 chip</p>
+        <p>Ask me questions about the STM32F Series MCU</p>
         <div className="session-info">
           {sessionId && <span className="session-badge">Session Active</span>}
           <button
@@ -202,6 +202,80 @@ function App() {
       </header>
 
       <div className="main-content">
+        <div className="chat-container" aria-live="polite">
+        {messages.length === 0 && (
+          <div className="welcome">
+            <p>Try asking:</p>
+            <ul>
+              <li>
+                <button
+                  onClick={() => sendExampleQuestion("How can I wire up a BMP280 pressure sensor?")}
+                  className="example-question"
+                  aria-label="Ask: How can I wire up a BMP280 pressure sensor?"
+                >
+                  "How can I wire up a BMP280 pressure sensor?"
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => sendExampleQuestion("How can I connect an SSD1306 OLED display?")}
+                  className="example-question"
+                  aria-label="Ask: How can I connect an SSD1306 OLED display?"
+                >
+                  "How can I connect an SSD1306 OLED display?"
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => sendExampleQuestion("How can I wire up a CAN bus transceiver?")}
+                  className="example-question"
+                  aria-label="Ask: How can I wire up a CAN bus transceiver?"
+                >
+                  "How can I wire up a CAN bus transceiver?"
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => sendExampleQuestion("How can I connect an LED and make it blink?")}
+                  className="example-question"
+                  aria-label="Ask: How can I connect an LED and make it blink?"
+                >
+                  "How can I connect an LED and make it blink?"
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => sendExampleQuestion("How can I wire up an MPU6050 accelerometer?")}
+                  className="example-question"
+                  aria-label="Ask: How can I wire up an MPU6050 accelerometer?"
+                >
+                  "How can I wire up an MPU6050 accelerometer?"
+                </button>
+              </li>
+            </ul>
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <div key={msg.id} className={`message ${msg.role}`}>
+            <div className="message-content">
+              {msg.role === 'assistant' ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              ) : (
+                msg.content
+              )}
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="message assistant">
+            <div className="message-content loading">Thinking...</div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+        </div>
+
         {Object.keys(pinAllocations).length > 0 && (
           <div className="pin-allocations-sidebar">
             <h3>Pin Allocations</h3>
@@ -236,71 +310,6 @@ function App() {
             </div>
           </div>
         )}
-
-        <div className="chat-container" aria-live="polite">
-        {messages.length === 0 && (
-          <div className="welcome">
-            <p>Try asking:</p>
-            <ul>
-              <li>
-                <button
-                  onClick={() => sendExampleQuestion("What pins can I use for I2C?")}
-                  className="example-question"
-                  aria-label="Ask: What pins can I use for I2C?"
-                >
-                  "What pins can I use for I2C?"
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => sendExampleQuestion("How do I configure the clock to 72MHz?")}
-                  className="example-question"
-                  aria-label="Ask: How do I configure the clock to 72MHz?"
-                >
-                  "How do I configure the clock to 72MHz?"
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => sendExampleQuestion("Which pins are 5V tolerant?")}
-                  className="example-question"
-                  aria-label="Ask: Which pins are 5V tolerant?"
-                >
-                  "Which pins are 5V tolerant?"
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => sendExampleQuestion("How do I connect an MPU6050?")}
-                  className="example-question"
-                  aria-label="Ask: How do I connect an MPU6050?"
-                >
-                  "How do I connect an MPU6050?"
-                </button>
-              </li>
-            </ul>
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <div key={msg.id} className={`message ${msg.role}`}>
-            <div className="message-content">
-              {msg.role === 'assistant' ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-              ) : (
-                msg.content
-              )}
-            </div>
-          </div>
-        ))}
-
-        {loading && (
-          <div className="message assistant">
-            <div className="message-content loading">Thinking...</div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-        </div>
       </div>
 
       {errorToast && (

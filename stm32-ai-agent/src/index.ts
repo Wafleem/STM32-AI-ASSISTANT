@@ -12,6 +12,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use('/*', cors({
   origin: [
     'https://stm32-assistant.pages.dev',
+    'https://stm32-assistant-staging.pages.dev',
     'https://stm32-ai-agent-staging.wafleem.workers.dev',
     'http://localhost:5173',
     'http://localhost:5174',
@@ -168,7 +169,7 @@ app.post('/api/chat', async (c) => {
 
   // Call Workers AI
   // Model name cast needed — @cf/meta/llama-3.1-8b-instruct isn't in Cloudflare's AiModels type yet
-  const aiResult = await (c.env.AI.run as Function)('@cf/meta/llama-3.1-8b-instruct', {
+  const aiResult = await (c.env.AI.run as Function)('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
     messages,
     max_tokens: 1024
   }) as LLMResponse;
@@ -187,6 +188,28 @@ app.post('/api/chat', async (c) => {
 
   // Extract pin allocations from response
   const newAllocations = extractPinAllocations(response, message);
+
+  // Fallback: if LLM didn't output allocations but this looks like a connection request
+  // and we have a matching device pattern, use the pattern's default pins
+  if (Object.keys(newAllocations).length === 0 && searchResults.devicePatterns.length > 0) {
+    const connectionWords = /connect|wire|hook\s*up|attach|add|blink|set\s*up/i;
+    if (connectionWords.test(message)) {
+      // Use the first matching device pattern
+      const pattern = searchResults.devicePatterns[0];
+      const defaultPins = parseJSON<Record<string, string>>(pattern.default_pins, {});
+      for (const [func, pin] of Object.entries(defaultPins)) {
+        const normalized = normalizePin(pin);
+        if (normalized && !currentAllocations[normalized]) {
+          newAllocations[normalized] = {
+            function: func,
+            device: pattern.device_name,
+            notes: pattern.requirements || undefined
+          };
+        }
+      }
+    }
+  }
+
   const updatedAllocations = { ...currentAllocations };
 
   // Validate proposed allocations against the real pin database
@@ -256,10 +279,27 @@ app.post('/api/chat', async (c) => {
 
   // Remove structured allocation block from user-visible response
   // LLM outputs varying formats: ---PIN_ALLOCATIONS---, PIN_ALLOCATIONS:, ---END_ALLOCATIONS---, ---END---, etc.
+  // Require newline or start-of-string before the block to avoid eating into prose text
   let cleanResponse = (response.response || '')
-    .replace(/[-—]*\s*PIN_ALLOCATIONS\s*[-—]*[\s\S]*?[-—]*\s*END[\s\S]{0,20}[-—]*/g, '')
-    .replace(/PIN_ALLOCATIONS\s*:?\s*[-—]*[\s\S]*$/g, '')
+    .replace(/(?:^|\n)\s*[-—]{2,}\s*PIN_ALLOCATIONS\s*[-—]*[\s\S]*?[-—]*\s*END[\s\S]{0,20}[-—]*/g, '')
+    .replace(/(?:^|\n)\s*PIN_ALLOCATIONS\s*:?\s*[-—]*[\s\S]*$/g, '')
+    .replace(/(?:^|\n)\s*[-—]{3,}\s*\n\s*PIN\s*:/g, '')
     .trim();
+
+  // Strip init boilerplate from code blocks — the 8B model stubbornly generates it
+  cleanResponse = cleanResponse.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    // Remove lines containing forbidden init patterns
+    const forbidden = /^\s*(#include|int\s+main|void\s+main|GPIO_InitTypeDef|GPIO_InitStruct|HAL_GPIO_Init\(|HAL_Init\(|MX_\w+_Init|SystemClock_Config|__HAL_RCC|RCC_)/;
+    const lines = code.split('\n');
+    const cleaned = lines.filter((line: string) => !forbidden.test(line));
+    // Remove orphaned braces from stripped main()/while wrapper
+    const result = cleaned.join('\n')
+      .replace(/^\s*\{\s*\n/gm, '')
+      .replace(/^\s*\}\s*$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    return '```' + (lang || 'c') + '\n' + result + '\n```';
+  });
 
   // ========== SECURITY: Output Filtering ==========
   const leakagePatterns = [
@@ -303,6 +343,15 @@ interface ParsedAIResponse {
   tool_calls: ToolCall[];
 }
 
+// Clean up useless LLM-generated notes (keep 5V tolerance info)
+function cleanNotes(notes: string | undefined): string | undefined {
+  if (!notes) return undefined;
+  // Remove only generic useless phrases that add no value
+  const junk = /\b(active (high|low)|gpio output|gpio input|digital output|digital input)\b/gi;
+  let cleaned = notes.replace(junk, '').replace(/[.,]\s*[.,]/g, '.').replace(/^[.,\s]+|[.,\s]+$/g, '').trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
 // Normalize pin strings: "PA 0" → "PA0", "p b 6" → "PB6", "Pa5" → "PA5"
 function normalizePin(raw: string): string | null {
   const cleaned = raw.toUpperCase().replace(/[\s_-]/g, '');
@@ -317,13 +366,12 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
   // even if the LLM mistakenly includes a PIN_ALLOCATIONS block
   const informationalPatterns = [
     /which pins|what pins|list.*pins/i,
-    /can i use|could i use/i,
+    /^can i use|^could i use/i,
     /are.*5v tolerant|5v.*tolerant/i,
-    /available|options/i,
+    /available pins|available interfaces/i,
     /does (this|the|it) (chip|board|stm32) (have|support)/i,
-    /how many/i,
-    /tell me about/i,
-    /what (is|are) the/i,
+    /how many (pins|timers|peripherals)/i,
+    /what (is|are) the (pin|spec|feature)/i,
   ];
 
   const isInformational = informationalPatterns.some(pattern => pattern.test(userMsg));
@@ -392,7 +440,7 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
         allocations[pin] = {
           function: functionMatch ? functionMatch[1].trim() : 'GPIO',
           device: deviceMatch ? deviceMatch[1].trim() : undefined,
-          notes: notesMatch ? notesMatch[1].trim() : undefined
+          notes: cleanNotes(notesMatch ? notesMatch[1].trim() : undefined)
         };
       }
     }
@@ -418,7 +466,7 @@ function extractPinAllocations(aiResponse: ParsedAIResponse, userMsg: string): P
         allocations[pin] = {
           function: functionMatch ? functionMatch[1].trim() : 'GPIO',
           device: deviceMatch ? deviceMatch[1].trim() : undefined,
-          notes: notesMatch ? notesMatch[1].trim() : undefined
+          notes: cleanNotes(notesMatch ? notesMatch[1].trim() : undefined)
         };
       }
     }
